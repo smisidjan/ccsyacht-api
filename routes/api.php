@@ -1,0 +1,78 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Http\Controllers\Api\AuthController as TenantAuthController;
+use App\Http\Controllers\Api\InvitationController;
+use App\Http\Controllers\Api\System\AuthController;
+use App\Http\Controllers\Api\System\TenantController;
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| Public Routes (no tenant header required)
+|--------------------------------------------------------------------------
+|
+| These routes operate on the central database and do not require
+| the X-Tenant-ID header.
+|
+*/
+
+Route::prefix('auth')->group(function () {
+    // Email lookup to find tenants for a user
+    Route::post('/lookup', [TenantAuthController::class, 'lookup']);
+});
+
+// Tenant registration info (public - for registration page)
+Route::get('/tenants/{slug}/registration-info', [TenantController::class, 'registrationInfo']);
+
+// Public invitation routes (no tenant middleware - tenant is encoded in token)
+Route::get('/invitations/{token}', [InvitationController::class, 'showByToken']);
+Route::post('/invitations/accept', [InvitationController::class, 'acceptPublic']);
+Route::post('/invitations/decline', [InvitationController::class, 'declinePublic']);
+
+/*
+|--------------------------------------------------------------------------
+| System API Routes (/api/system/*)
+|--------------------------------------------------------------------------
+|
+| These routes are for system administration.
+|
+*/
+
+Route::prefix('system')->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | System Authentication
+    |--------------------------------------------------------------------------
+    */
+    Route::post('/login', [AuthController::class, 'login']);
+
+    Route::middleware('auth:system')->group(function () {
+        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::get('/me', [AuthController::class, 'me']);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Tenant Management
+        |--------------------------------------------------------------------------
+        */
+        Route::apiResource('tenants', TenantController::class);
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Fallback Route
+|--------------------------------------------------------------------------
+*/
+
+Route::fallback(function () {
+    return response()->json([
+        '@context' => 'https://schema.org',
+        '@type' => 'Action',
+        'actionStatus' => 'FailedActionStatus',
+        'error' => 'Endpoint not found.',
+    ], 404);
+});
