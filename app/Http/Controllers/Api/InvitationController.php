@@ -8,40 +8,33 @@ use App\Http\Requests\Auth\SendInvitationRequest;
 use App\Http\Resources\AuthResource;
 use App\Http\Resources\InvitationResource;
 use App\Models\Invitation;
-use App\Models\User;
-use App\Notifications\InvitationSentNotification;
+use App\Services\InvitationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Notification;
 
 class InvitationController extends Controller
 {
+    public function __construct(
+        private InvitationService $invitationService
+    ) {}
+
     public function index(Request $request): AnonymousResourceCollection
     {
-        $invitations = Invitation::with('invitedBy')
-            ->when($request->status, fn($q, $status) => $q->where('status', $status))
-            ->orderBy('created_at', 'desc')
-            ->paginate(15);
+        $invitations = $this->invitationService->list($request->status);
 
         return InvitationResource::collection($invitations);
     }
 
     public function store(SendInvitationRequest $request): JsonResponse
     {
-        $invitation = Invitation::create([
-            'email' => $request->email,
-            'role' => $request->role,
-            'invited_by' => $request->user()->id,
-        ]);
+        $invitation = $this->invitationService->create(
+            $request->email,
+            $request->role,
+            $request->user()
+        );
 
-        $invitation->load('invitedBy');
-
-        Notification::route('mail', $request->email)
-            ->notify(new InvitationSentNotification($invitation));
-
-        return response()->json(new InvitationResource($invitation), 201);
+        return $this->resourceResponse(new InvitationResource($invitation), 201);
     }
 
     public function show(string $token): JsonResponse
@@ -50,21 +43,7 @@ class InvitationController extends Controller
             ->where('token', $token)
             ->firstOrFail();
 
-        return response()->json([
-            '@context' => 'https://schema.org',
-            '@type' => 'InviteAction',
-            'identifier' => $invitation->id,
-            'recipient' => [
-                '@type' => 'Person',
-                'email' => $invitation->email,
-            ],
-            'role' => $invitation->role,
-            'actionStatus' => $invitation->isPending() ? 'PotentialActionStatus' : 'FailedActionStatus',
-            'isValid' => $invitation->isPending(),
-            'isExpired' => $invitation->isExpired(),
-            'expires' => $invitation->expires_at->toIso8601String(),
-            'invitedBy' => $invitation->invitedBy->name,
-        ]);
+        return $this->resourceResponse(InvitationResource::detailed($invitation));
     }
 
     public function accept(AcceptInvitationRequest $request): JsonResponse
@@ -74,31 +53,12 @@ class InvitationController extends Controller
             ->firstOrFail();
 
         if ($invitation->isExpired()) {
-            return response()->json([
-                '@context' => 'https://schema.org',
-                '@type' => 'Action',
-                'actionStatus' => 'FailedActionStatus',
-                'error' => 'This invitation has expired.',
-            ], 400);
+            return $this->errorResponse('This invitation has expired.');
         }
 
-        $user = DB::transaction(function () use ($request, $invitation) {
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $invitation->email,
-                'password' => $request->password,
-                'email_verified_at' => now(),
-            ]);
+        $result = $this->invitationService->accept($invitation, $request->name, $request->password);
 
-            $user->assignRole($invitation->role);
-            $invitation->markAsAccepted($user);
-
-            return $user;
-        });
-
-        $token = $user->createToken('auth-token')->plainTextToken;
-
-        return response()->json(new AuthResource($user, $token), 201);
+        return $this->resourceResponse(new AuthResource($result['user'], $result['token']), 201);
     }
 
     public function decline(Request $request): JsonResponse
@@ -111,43 +71,22 @@ class InvitationController extends Controller
             ->where('status', 'pending')
             ->firstOrFail();
 
-        $invitation->markAsDeclined();
+        $this->invitationService->decline($invitation);
 
-        return response()->json([
-            '@context' => 'https://schema.org',
-            '@type' => 'RejectAction',
-            'actionStatus' => 'CompletedActionStatus',
-            'description' => 'Invitation declined successfully.',
-        ]);
+        return $this->successResponse('RejectAction', 'Invitation declined successfully.');
     }
 
     public function resend(int $id, Request $request): JsonResponse
     {
         $invitation = Invitation::findOrFail($id);
 
-        // Allow resending pending invitations (including expired ones)
         if ($invitation->status !== 'pending') {
-            return response()->json([
-                '@context' => 'https://schema.org',
-                '@type' => 'Action',
-                'actionStatus' => 'FailedActionStatus',
-                'error' => 'Can only resend pending invitations.',
-            ], 400);
+            return $this->errorResponse('Can only resend pending invitations.');
         }
 
-        $invitation->update([
-            'expires_at' => now()->addDays(7),
-        ]);
+        $this->invitationService->resend($invitation);
 
-        Notification::route('mail', $invitation->email)
-            ->notify(new InvitationSentNotification($invitation));
-
-        return response()->json([
-            '@context' => 'https://schema.org',
-            '@type' => 'SendAction',
-            'actionStatus' => 'CompletedActionStatus',
-            'description' => 'Invitation resent successfully.',
-        ]);
+        return $this->successResponse('SendAction', 'Invitation resent successfully.');
     }
 
     public function cancel(int $id): JsonResponse
@@ -155,22 +94,12 @@ class InvitationController extends Controller
         $invitation = Invitation::findOrFail($id);
 
         if ($invitation->status !== 'pending') {
-            return response()->json([
-                '@context' => 'https://schema.org',
-                '@type' => 'Action',
-                'actionStatus' => 'FailedActionStatus',
-                'error' => 'Can only cancel pending invitations.',
-            ], 400);
+            return $this->errorResponse('Can only cancel pending invitations.');
         }
 
-        $invitation->update(['status' => 'expired']);
+        $this->invitationService->cancel($invitation);
 
-        return response()->json([
-            '@context' => 'https://schema.org',
-            '@type' => 'CancelAction',
-            'actionStatus' => 'CompletedActionStatus',
-            'description' => 'Invitation cancelled successfully.',
-        ]);
+        return $this->successResponse('CancelAction', 'Invitation cancelled successfully.');
     }
 
     /*
@@ -181,34 +110,15 @@ class InvitationController extends Controller
 
     public function showByToken(string $token): JsonResponse
     {
-        $invitation = Invitation::findByToken($token);
+        $invitation = $this->invitationService->findByToken($token);
 
         if (!$invitation) {
-            return response()->json([
-                '@context' => 'https://schema.org',
-                '@type' => 'Action',
-                'actionStatus' => 'FailedActionStatus',
-                'error' => 'Invitation not found.',
-            ], 404);
+            return $this->errorResponse('Invitation not found.', 404);
         }
 
         $invitation->load('invitedBy');
 
-        return response()->json([
-            '@context' => 'https://schema.org',
-            '@type' => 'InviteAction',
-            'identifier' => $invitation->id,
-            'recipient' => [
-                '@type' => 'Person',
-                'email' => $invitation->email,
-            ],
-            'role' => $invitation->role,
-            'actionStatus' => $invitation->isPending() ? 'PotentialActionStatus' : 'FailedActionStatus',
-            'isValid' => $invitation->isPending(),
-            'isExpired' => $invitation->isExpired(),
-            'expires' => $invitation->expires_at->toIso8601String(),
-            'invitedBy' => $invitation->invitedBy->name,
-        ]);
+        return $this->resourceResponse(InvitationResource::detailed($invitation));
     }
 
     public function acceptPublic(Request $request): JsonResponse
@@ -219,52 +129,23 @@ class InvitationController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
-        $invitation = Invitation::findByToken($request->token);
+        $invitation = $this->invitationService->findByToken($request->token);
 
         if (!$invitation) {
-            return response()->json([
-                '@context' => 'https://schema.org',
-                '@type' => 'Action',
-                'actionStatus' => 'FailedActionStatus',
-                'error' => 'Invitation not found.',
-            ], 404);
+            return $this->errorResponse('Invitation not found.', 404);
         }
 
         if ($invitation->status !== 'pending') {
-            return response()->json([
-                '@context' => 'https://schema.org',
-                '@type' => 'Action',
-                'actionStatus' => 'FailedActionStatus',
-                'error' => 'This invitation is no longer valid.',
-            ], 400);
+            return $this->errorResponse('This invitation is no longer valid.');
         }
 
         if ($invitation->isExpired()) {
-            return response()->json([
-                '@context' => 'https://schema.org',
-                '@type' => 'Action',
-                'actionStatus' => 'FailedActionStatus',
-                'error' => 'This invitation has expired.',
-            ], 400);
+            return $this->errorResponse('This invitation has expired.');
         }
 
-        $user = DB::transaction(function () use ($request, $invitation) {
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $invitation->email,
-                'password' => $request->password,
-                'email_verified_at' => now(),
-            ]);
+        $result = $this->invitationService->accept($invitation, $request->name, $request->password);
 
-            $user->assignRole($invitation->role);
-            $invitation->markAsAccepted($user);
-
-            return $user;
-        });
-
-        $token = $user->createToken('auth-token')->plainTextToken;
-
-        return response()->json(new AuthResource($user, $token), 201);
+        return $this->resourceResponse(new AuthResource($result['user'], $result['token']), 201);
     }
 
     public function declinePublic(Request $request): JsonResponse
@@ -273,33 +154,18 @@ class InvitationController extends Controller
             'token' => ['required', 'string'],
         ]);
 
-        $invitation = Invitation::findByToken($request->token);
+        $invitation = $this->invitationService->findByToken($request->token);
 
         if (!$invitation) {
-            return response()->json([
-                '@context' => 'https://schema.org',
-                '@type' => 'Action',
-                'actionStatus' => 'FailedActionStatus',
-                'error' => 'Invitation not found.',
-            ], 404);
+            return $this->errorResponse('Invitation not found.', 404);
         }
 
         if ($invitation->status !== 'pending') {
-            return response()->json([
-                '@context' => 'https://schema.org',
-                '@type' => 'Action',
-                'actionStatus' => 'FailedActionStatus',
-                'error' => 'This invitation is no longer valid.',
-            ], 400);
+            return $this->errorResponse('This invitation is no longer valid.');
         }
 
-        $invitation->markAsDeclined();
+        $this->invitationService->decline($invitation);
 
-        return response()->json([
-            '@context' => 'https://schema.org',
-            '@type' => 'RejectAction',
-            'actionStatus' => 'CompletedActionStatus',
-            'description' => 'Invitation declined successfully.',
-        ]);
+        return $this->successResponse('RejectAction', 'Invitation declined successfully.');
     }
 }

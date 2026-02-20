@@ -5,29 +5,26 @@ namespace App\Http\Controllers\Api\System;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\TenantResource;
 use App\Models\Tenant;
+use App\Services\System\TenantService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Str;
 
 class TenantController extends Controller
 {
-    /**
-     * List all tenants.
-     */
+    public function __construct(
+        private TenantService $tenantService
+    ) {}
+
     public function index(Request $request): AnonymousResourceCollection
     {
-        $tenants = Tenant::query()
-            ->when($request->has('active'), fn($q) => $q->where('active', $request->boolean('active')))
-            ->orderBy('created_at', 'desc')
-            ->paginate(15);
+        $tenants = $this->tenantService->list(
+            $request->has('active') ? $request->boolean('active') : null
+        );
 
         return TenantResource::collection($tenants);
     }
 
-    /**
-     * Create a new tenant.
-     */
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -38,43 +35,21 @@ class TenantController extends Controller
             'admin_name' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $slug = $validated['slug'] ?? Str::slug($validated['name']);
+        $tenant = $this->tenantService->create($validated);
 
-        // Ensure slug is unique
-        $originalSlug = $slug;
-        $counter = 1;
-        while (Tenant::where('slug', $slug)->exists()) {
-            $slug = $originalSlug . '-' . $counter++;
-        }
-
-        $tenant = Tenant::create([
-            'name' => $validated['name'],
-            'slug' => $slug,
-            'active' => true,
-            'admin_email' => $validated['admin_email'],
-            'admin_password' => $validated['admin_password'],
-            'admin_name' => $validated['admin_name'] ?? 'Admin',
-        ]);
-
-        return response()->json([
-            '@context' => 'https://schema.org',
-            '@type' => 'CreateAction',
-            'actionStatus' => 'CompletedActionStatus',
-            'result' => new TenantResource($tenant),
-        ], 201);
+        return $this->successWithResult(
+            'CreateAction',
+            'Tenant created successfully.',
+            new TenantResource($tenant),
+            201
+        );
     }
 
-    /**
-     * Show a specific tenant.
-     */
     public function show(Tenant $tenant): JsonResponse
     {
-        return response()->json(new TenantResource($tenant));
+        return $this->resourceResponse(new TenantResource($tenant));
     }
 
-    /**
-     * Update a tenant.
-     */
     public function update(Request $request, Tenant $tenant): JsonResponse
     {
         $validated = $request->validate([
@@ -83,50 +58,28 @@ class TenantController extends Controller
             'active' => ['sometimes', 'boolean'],
         ]);
 
-        $tenant->update($validated);
+        $tenant = $this->tenantService->update($tenant, $validated);
 
-        return response()->json([
-            '@context' => 'https://schema.org',
-            '@type' => 'UpdateAction',
-            'actionStatus' => 'CompletedActionStatus',
-            'result' => new TenantResource($tenant->fresh()),
-        ]);
+        return $this->successWithResult(
+            'UpdateAction',
+            'Tenant updated successfully.',
+            new TenantResource($tenant)
+        );
     }
 
-    /**
-     * Delete a tenant.
-     */
     public function destroy(Tenant $tenant): JsonResponse
     {
-        $tenant->delete();
+        $this->tenantService->delete($tenant);
 
-        return response()->json([
-            '@context' => 'https://schema.org',
-            '@type' => 'DeleteAction',
-            'actionStatus' => 'CompletedActionStatus',
-            'description' => 'Tenant deleted successfully.',
-        ]);
+        return $this->successResponse('DeleteAction', 'Tenant deleted successfully.');
     }
 
-    /**
-     * Get tenant info for registration page.
-     *
-     * Public endpoint - no authentication required.
-     * Returns tenant name and slug for display on registration form.
-     */
     public function registrationInfo(string $slug): JsonResponse
     {
-        $tenant = Tenant::where('slug', $slug)
-            ->where('active', true)
-            ->first();
+        $tenant = $this->tenantService->getRegistrationInfo($slug);
 
         if (!$tenant) {
-            return response()->json([
-                '@context' => 'https://schema.org',
-                '@type' => 'Action',
-                'actionStatus' => 'FailedActionStatus',
-                'error' => 'Organization not found or inactive.',
-            ], 404);
+            return $this->errorResponse('Organization not found or inactive.', 404);
         }
 
         return response()->json([
