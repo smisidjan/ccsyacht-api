@@ -3,14 +3,13 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\JsonResource;
 
-class RegistrationRequestResource extends JsonResource
+class RegistrationRequestResource extends BaseResource
 {
     public function toArray(Request $request): array
     {
         return [
-            '@context' => 'https://schema.org',
+            '@context' => $this->schemaContext(),
             '@type' => 'RegisterAction',
             'identifier' => $this->id,
             'agent' => [
@@ -19,28 +18,11 @@ class RegistrationRequestResource extends JsonResource
                 'email' => $this->email,
             ],
             'description' => $this->message,
-            'actionStatus' => $this->getSchemaActionStatus(),
-            'dateCreated' => $this->created_at?->toIso8601String(),
-            'dateProcessed' => $this->processed_at?->toIso8601String(),
-            'processedBy' => $this->whenLoaded('processedBy', function () {
-                return [
-                    '@type' => 'Person',
-                    'identifier' => $this->processedBy->id,
-                    'name' => $this->processedBy->name,
-                    'email' => $this->processedBy->email,
-                ];
-            }),
+            'actionStatus' => $this->mapActionStatus($this->status, self::$pendingStatusMapping),
+            'dateCreated' => $this->formatDate($this->created_at),
+            'dateProcessed' => $this->formatDate($this->processed_at),
+            'processedBy' => $this->whenLoaded('processedBy', fn() => $this->formatPerson($this->processedBy)),
             'rejectionReason' => $this->rejection_reason,
         ];
-    }
-
-    private function getSchemaActionStatus(): string
-    {
-        return match ($this->status) {
-            'pending' => 'PotentialActionStatus',
-            'approved' => 'CompletedActionStatus',
-            'rejected' => 'FailedActionStatus',
-            default => 'PotentialActionStatus',
-        };
     }
 }
