@@ -27,13 +27,17 @@ class UserController extends Controller
         return UserResource::collection($users);
     }
 
-    public function show(User $user): JsonResponse
+    public function show(string $id): JsonResponse
     {
+        $user = User::findOrFail($id);
+
         return $this->resourceResponse(new UserResource($user));
     }
 
-    public function update(User $user, Request $request): JsonResponse
+    public function update(string $id, Request $request): JsonResponse
     {
+        $user = User::findOrFail($id);
+
         $validated = $request->validate([
             'name' => ['sometimes', 'string', 'max:255'],
             'email' => ['sometimes', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
@@ -46,8 +50,10 @@ class UserController extends Controller
         return $this->resourceResponse(new UserResource($user));
     }
 
-    public function destroy(User $user, Request $request): JsonResponse
+    public function destroy(string $id, Request $request): JsonResponse
     {
+        $user = User::findOrFail($id);
+
         try {
             $this->userService->deactivate($user, $request->user());
         } catch (\InvalidArgumentException $e) {

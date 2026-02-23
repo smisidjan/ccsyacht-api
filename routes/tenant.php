@@ -73,9 +73,9 @@ Route::prefix('api')->middleware('tenant')->group(function () {
         */
         Route::middleware('role:admin|main user')->group(function () {
             Route::get('/users', [UserController::class, 'index']);
-            Route::get('/users/{user}', [UserController::class, 'show']);
-            Route::put('/users/{user}', [UserController::class, 'update']);
-            Route::delete('/users/{user}', [UserController::class, 'destroy']);
+            Route::get('/users/{id}', [UserController::class, 'show']);
+            Route::put('/users/{id}', [UserController::class, 'update']);
+            Route::delete('/users/{id}', [UserController::class, 'destroy']);
         });
     });
 });

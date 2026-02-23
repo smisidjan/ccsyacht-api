@@ -3,8 +3,8 @@
 namespace App\Http\Resources;
 
 use App\Models\User;
+use DateTimeInterface;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Carbon;
 
 abstract class BaseResource extends JsonResource
 {
@@ -13,9 +13,9 @@ abstract class BaseResource extends JsonResource
         return 'https://schema.org';
     }
 
-    protected function formatDate(?Carbon $date): ?string
+    protected function formatDate(?DateTimeInterface $date): ?string
     {
-        return $date?->toIso8601String();
+        return $date?->format('c');
     }
 
     protected function formatPerson(?User $user): ?array
