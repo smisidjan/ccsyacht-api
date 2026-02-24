@@ -29,13 +29,16 @@ class DefaultTenantSeeder extends Seeder
         }
 
         // Create admin user within the tenant context
+        $adminEmail = env('CCS_ADMIN_EMAIL', 'admin@ccsyacht.com');
+        $adminName = env('CCS_ADMIN_NAME', 'Admin');
+
         $this->command->info('Creating tenant admin user...');
-        $tenant->run(function () use ($tenant) {
+        $tenant->run(function () use ($tenant, $adminEmail, $adminName) {
             $admin = User::firstOrCreate(
-                ['email' => 'admin@ccsyacht.nl'],
+                ['email' => $adminEmail],
                 [
-                    'name' => 'Admin',
-                    'password' => 'password',
+                    'name' => $adminName,
+                    'password' => null,
                     'email_verified_at' => now(),
                     'active' => true,
                 ]
@@ -51,6 +54,6 @@ class DefaultTenantSeeder extends Seeder
                 ['user_id' => $admin->id]
             );
         });
-        $this->command->info('Tenant admin user created: admin@ccsyacht.nl');
+        $this->command->info("Tenant admin user created: {$adminEmail}");
     }
 }

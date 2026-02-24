@@ -6,14 +6,15 @@ use App\Models\Invitation;
 use App\Models\RegistrationRequest;
 use App\Models\TenantUser;
 use App\Models\User;
-use App\Notifications\PasswordResetNotification;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class AuthService
 {
+    public function __construct(
+        private PasswordService $passwordService
+    ) {}
+
     public function lookupTenants(string $email): array
     {
         $tenantUsers = TenantUser::with('tenant')
@@ -33,6 +34,12 @@ class AuthService
 
         if (!$user) {
             $this->checkUserStatus($email);
+        }
+
+        if (!$user->password) {
+            throw ValidationException::withMessages([
+                'email' => ['No password set. Please use forgot password to set your password.'],
+            ]);
         }
 
         if (!Hash::check($password, $user->password)) {
@@ -97,9 +104,7 @@ class AuthService
 
     public function changePassword(User $user, string $newPassword): void
     {
-        $user->update([
-            'password' => $newPassword,
-        ]);
+        $this->passwordService->changePassword($user, $newPassword);
     }
 
     public function sendPasswordReset(string $email): void
@@ -110,55 +115,16 @@ class AuthService
             return;
         }
 
-        DB::table('password_reset_tokens')->where('email', $user->email)->delete();
-
-        $token = Str::random(64);
-        DB::table('password_reset_tokens')->insert([
-            'email' => $user->email,
-            'token' => Hash::make($token),
-            'created_at' => now(),
-        ]);
-
-        $user->notify(new PasswordResetNotification($token));
+        $this->passwordService->sendResetLink($user);
     }
 
     public function resetPassword(string $email, string $token, string $newPassword): void
     {
-        $record = DB::table('password_reset_tokens')
-            ->where('email', $email)
-            ->first();
-
-        if (!$record) {
-            throw ValidationException::withMessages([
-                'email' => ['Invalid password reset request.'],
-            ]);
-        }
-
-        if (now()->diffInMinutes($record->created_at) > 60) {
-            DB::table('password_reset_tokens')->where('email', $email)->delete();
-            throw ValidationException::withMessages([
-                'token' => ['This password reset link has expired.'],
-            ]);
-        }
-
-        if (!Hash::check($token, $record->token)) {
-            throw ValidationException::withMessages([
-                'token' => ['Invalid password reset token.'],
-            ]);
-        }
-
-        $user = User::where('email', $email)->first();
-
-        if (!$user) {
-            throw ValidationException::withMessages([
-                'email' => ['User not found.'],
-            ]);
-        }
-
-        $user->update([
-            'password' => $newPassword,
-        ]);
-
-        DB::table('password_reset_tokens')->where('email', $email)->delete();
+        $this->passwordService->resetPassword(
+            $email,
+            $token,
+            $newPassword,
+            User::class
+        );
     }
 }
