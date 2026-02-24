@@ -7,12 +7,13 @@ use Illuminate\Notifications\Messages\MailMessage;
 class PasswordResetNotification extends BaseNotification
 {
     public function __construct(
-        private string $token
+        private string $token,
+        private string $resetPath = '/reset-password'
     ) {}
 
     public function toMail(object $notifiable): MailMessage
     {
-        $resetUrl = $this->buildFrontendUrl('/reset-password', [
+        $resetUrl = $this->buildFrontendUrl($this->resetPath, [
             'token' => $this->token,
             'email' => $notifiable->email,
         ]);
