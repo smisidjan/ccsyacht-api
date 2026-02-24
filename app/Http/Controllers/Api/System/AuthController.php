@@ -44,4 +44,56 @@ class AuthController extends Controller
     {
         return $this->resourceResponse(new SystemAdminResource($request->user('system')));
     }
+
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        $this->authService->sendPasswordReset($request->email);
+
+        return $this->successResponse(
+            'ForgotPasswordAction',
+            'If the email exists, a password reset link has been sent.'
+        );
+    }
+
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => ['required', 'email'],
+            'token' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $this->authService->resetPassword(
+            $request->email,
+            $request->token,
+            $request->password
+        );
+
+        return $this->successResponse(
+            'ResetPasswordAction',
+            'Password has been reset successfully.'
+        );
+    }
+
+    public function changePassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'current_password' => ['required', 'string', 'current_password:system'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $this->authService->changePassword(
+            $request->user('system'),
+            $request->password
+        );
+
+        return $this->successResponse(
+            'ChangePasswordAction',
+            'Password has been changed successfully.'
+        );
+    }
 }

@@ -10,10 +10,10 @@ class SystemAdminSeeder extends Seeder
     public function run(): void
     {
         SystemAdmin::firstOrCreate(
-            ['email' => 'admin@ccsyacht.com'],
+            ['email' => env('SYSTEM_ADMIN_EMAIL', 'admin@ccsyacht.com')],
             [
-                'name' => 'System Administrator',
-                'password' => 'password',
+                'name' => env('SYSTEM_ADMIN_NAME', 'System Administrator'),
+                'password' => null,
                 'active' => true,
             ]
         );
