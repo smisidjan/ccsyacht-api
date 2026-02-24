@@ -31,6 +31,9 @@ Route::get('/invitations/{token}', [InvitationController::class, 'showByToken'])
 Route::post('/invitations/accept', [InvitationController::class, 'acceptPublic']);
 Route::post('/invitations/decline', [InvitationController::class, 'declinePublic']);
 
+// Admin registration (tenant is encoded in token)
+Route::post('/register-admin', [TenantAuthController::class, 'registerAdmin']);
+
 /*
 |--------------------------------------------------------------------------
 | System API Routes (/api/system/*)
@@ -44,14 +47,22 @@ Route::prefix('system')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | System Authentication
+    | System Authentication (Public)
     |--------------------------------------------------------------------------
     */
     Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
+    /*
+    |--------------------------------------------------------------------------
+    | System Authentication (Protected)
+    |--------------------------------------------------------------------------
+    */
     Route::middleware('auth:system')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
+        Route::post('/change-password', [AuthController::class, 'changePassword']);
 
         /*
         |--------------------------------------------------------------------------

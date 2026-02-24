@@ -31,7 +31,6 @@ class TenantController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255', 'unique:landlord.tenants,slug'],
             'admin_email' => ['required', 'email', 'max:255'],
-            'admin_password' => ['required', 'string', 'min:8'],
             'admin_name' => ['nullable', 'string', 'max:255'],
         ]);
 
