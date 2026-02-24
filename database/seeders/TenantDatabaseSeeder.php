@@ -2,9 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\TenantUser;
-use App\Models\User;
+use App\Models\TenantRegistrationToken;
+use App\Notifications\TenantAdminRegistrationNotification;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Notification;
 
 class TenantDatabaseSeeder extends Seeder
 {
@@ -14,33 +15,23 @@ class TenantDatabaseSeeder extends Seeder
             RoleSeeder::class,
         ]);
 
-        // Create admin user if tenant has admin data
+        // Send registration invitation if tenant has admin email
         $tenant = tenant();
         $adminEmail = $tenant->admin_email ?? null;
-        $adminPassword = $tenant->admin_password ?? null;
-        $adminName = $tenant->admin_name ?? 'Admin';
 
-        if ($adminEmail && $adminPassword) {
-            $admin = User::create([
-                'name' => $adminName,
+        if ($adminEmail) {
+            $token = TenantRegistrationToken::create([
                 'email' => $adminEmail,
-                'password' => $adminPassword,
-                'email_verified_at' => now(),
-                'active' => true,
+                'role' => 'admin',
             ]);
 
-            $admin->assignRole('admin');
+            // Send registration email
+            Notification::route('mail', $adminEmail)
+                ->notify(new TenantAdminRegistrationNotification($token, $tenant));
 
-            // Sync to central tenant_users table
-            TenantUser::updateOrCreate(
-                ['email' => $admin->email, 'tenant_id' => $tenant->id],
-                ['user_id' => $admin->id]
-            );
-
-            // Clear sensitive data from tenant after use
+            // Clear admin data from tenant after use
             $tenant->update([
                 'admin_email' => null,
-                'admin_password' => null,
                 'admin_name' => null,
             ]);
         }

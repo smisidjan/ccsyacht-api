@@ -31,7 +31,6 @@ class TenantService
             'slug' => $slug,
             'active' => true,
             'admin_email' => $data['admin_email'],
-            'admin_password' => $data['admin_password'],
             'admin_name' => $data['admin_name'] ?? 'Admin',
         ]);
     }
