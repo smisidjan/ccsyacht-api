@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\RegistrationRequest;
+use App\Models\TenantUser;
 use App\Models\User;
 use App\Notifications\RegistrationApprovedNotification;
 use App\Notifications\RegistrationRejectedNotification;
@@ -28,6 +29,7 @@ class RegistrationRequestService
             'email' => $email,
             'password' => $password,
             'message' => $message,
+            'status' => 'pending',
         ]);
 
         $admins = User::role(['admin', 'main user', 'invitation manager'])->get();
@@ -49,6 +51,12 @@ class RegistrationRequestService
 
             $user->assignRole($role);
             $registrationRequest->approve($processedBy, $user);
+
+            // Add to central TenantUser table for lookup
+            TenantUser::updateOrCreate(
+                ['email' => $user->email, 'tenant_id' => tenant()->id],
+                ['user_id' => $user->id]
+            );
 
             return $user;
         });
