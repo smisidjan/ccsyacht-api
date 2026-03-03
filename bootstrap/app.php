@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\InitializeTenancyByHeader;
+use App\Http\Middleware\SystemAdminTenantAccess;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -20,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => RoleMiddleware::class,
             'tenant' => InitializeTenancyByHeader::class,
+            'system-admin-tenant' => SystemAdminTenantAccess::class,
         ]);
 
         $middleware->statefulApi();
