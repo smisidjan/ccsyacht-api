@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -12,6 +14,7 @@ use App\Services\InvitationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use InvalidArgumentException;
 
 class InvitationController extends Controller
 {
@@ -19,6 +22,9 @@ class InvitationController extends Controller
         private InvitationService $invitationService
     ) {}
 
+    /**
+     * List invitations for the current tenant.
+     */
     public function index(Request $request): AnonymousResourceCollection
     {
         $invitations = $this->invitationService->list($request->status);
@@ -26,26 +32,42 @@ class InvitationController extends Controller
         return InvitationResource::collection($invitations);
     }
 
+    /**
+     * Create a new invitation (employee or guest).
+     */
     public function store(SendInvitationRequest $request): JsonResponse
     {
-        $invitation = $this->invitationService->create(
-            $request->email,
-            $request->role,
-            $request->user()
-        );
+        try {
+            $invitation = $this->invitationService->create(
+                email: $request->email,
+                role: $request->role ?? $request->role_name ?? 'user',
+                invitedBy: $request->user(),
+                employmentType: $request->employment_type ?? 'employee',
+                homeOrganizationId: $request->home_organization_id,
+                homeOrganizationName: $request->home_organization_name,
+                namedPosition: $request->named_position,
+            );
 
-        return $this->resourceResponse(new InvitationResource($invitation), 201);
+            return $this->resourceResponse(new InvitationResource($invitation), 201);
+        } catch (InvalidArgumentException $e) {
+            return $this->errorResponse($e->getMessage(), 422);
+        }
     }
 
-    public function show(string $token): JsonResponse
+    /**
+     * Show a specific invitation by ID.
+     */
+    public function show(string $id): JsonResponse
     {
         $invitation = Invitation::with('invitedBy')
-            ->where('token', $token)
-            ->firstOrFail();
+            ->findOrFail($id);
 
         return $this->resourceResponse(InvitationResource::detailed($invitation));
     }
 
+    /**
+     * Accept an invitation (within tenant context).
+     */
     public function accept(AcceptInvitationRequest $request): JsonResponse
     {
         $invitation = Invitation::where('token', $request->token)
@@ -56,11 +78,18 @@ class InvitationController extends Controller
             return $this->errorResponse('This invitation has expired.');
         }
 
-        $result = $this->invitationService->accept($invitation, $request->name, $request->password);
+        try {
+            $result = $this->invitationService->accept($invitation, $request->name, $request->password);
 
-        return $this->resourceResponse(new AuthResource($result['user'], $result['token']), 201);
+            return $this->resourceResponse(new AuthResource($result['user'], $result['token']), 201);
+        } catch (InvalidArgumentException $e) {
+            return $this->errorResponse($e->getMessage(), 422);
+        }
     }
 
+    /**
+     * Decline an invitation.
+     */
     public function decline(Request $request): JsonResponse
     {
         $request->validate([
@@ -71,56 +100,70 @@ class InvitationController extends Controller
             ->where('status', 'pending')
             ->firstOrFail();
 
-        $this->invitationService->decline($invitation);
+        try {
+            $this->invitationService->decline($invitation);
 
-        return $this->successResponse('RejectAction', 'Invitation declined successfully.');
+            return $this->successResponse('RejectAction', 'Invitation declined successfully.');
+        } catch (InvalidArgumentException $e) {
+            return $this->errorResponse($e->getMessage(), 422);
+        }
     }
 
+    /**
+     * Resend an invitation email.
+     */
     public function resend(int $id, Request $request): JsonResponse
     {
         $invitation = Invitation::findOrFail($id);
 
-        if ($invitation->status !== 'pending') {
-            return $this->errorResponse('Can only resend pending invitations.');
+        try {
+            $this->invitationService->resend($invitation);
+
+            return $this->successResponse('SendAction', 'Invitation resent successfully.');
+        } catch (InvalidArgumentException $e) {
+            return $this->errorResponse($e->getMessage(), 422);
         }
-
-        $this->invitationService->resend($invitation);
-
-        return $this->successResponse('SendAction', 'Invitation resent successfully.');
     }
 
+    /**
+     * Cancel an invitation.
+     */
     public function cancel(int $id): JsonResponse
     {
         $invitation = Invitation::findOrFail($id);
 
-        if ($invitation->status !== 'pending') {
-            return $this->errorResponse('Can only cancel pending invitations.');
+        try {
+            $this->invitationService->cancel($invitation);
+
+            return $this->successResponse('CancelAction', 'Invitation cancelled successfully.');
+        } catch (InvalidArgumentException $e) {
+            return $this->errorResponse($e->getMessage(), 422);
         }
-
-        $this->invitationService->cancel($invitation);
-
-        return $this->successResponse('CancelAction', 'Invitation cancelled successfully.');
     }
 
     /*
     |--------------------------------------------------------------------------
-    | Public Methods (no tenant middleware - tenant extracted from token)
+    | Public Methods (no tenant middleware - token-based lookup)
     |--------------------------------------------------------------------------
     */
 
+    /**
+     * Show invitation details by token (public endpoint).
+     */
     public function showByToken(string $token): JsonResponse
     {
         $invitation = $this->invitationService->findByToken($token);
 
-        if (!$invitation) {
+        if (! $invitation) {
             return $this->errorResponse('Invitation not found.', 404);
         }
-
-        $invitation->load('invitedBy');
 
         return $this->resourceResponse(InvitationResource::detailed($invitation));
     }
 
+    /**
+     * Accept invitation by token (public endpoint for new users).
+     */
     public function acceptPublic(Request $request): JsonResponse
     {
         $request->validate([
@@ -131,23 +174,26 @@ class InvitationController extends Controller
 
         $invitation = $this->invitationService->findByToken($request->token);
 
-        if (!$invitation) {
+        if (! $invitation) {
             return $this->errorResponse('Invitation not found.', 404);
         }
 
-        if ($invitation->status !== 'pending') {
+        if (! $invitation->isPending()) {
             return $this->errorResponse('This invitation is no longer valid.');
         }
 
-        if ($invitation->isExpired()) {
-            return $this->errorResponse('This invitation has expired.');
+        try {
+            $result = $this->invitationService->accept($invitation, $request->name, $request->password);
+
+            return $this->resourceResponse(new AuthResource($result['user'], $result['token']), 201);
+        } catch (InvalidArgumentException $e) {
+            return $this->errorResponse($e->getMessage(), 422);
         }
-
-        $result = $this->invitationService->accept($invitation, $request->name, $request->password);
-
-        return $this->resourceResponse(new AuthResource($result['user'], $result['token']), 201);
     }
 
+    /**
+     * Decline invitation by token (public endpoint).
+     */
     public function declinePublic(Request $request): JsonResponse
     {
         $request->validate([
@@ -156,7 +202,7 @@ class InvitationController extends Controller
 
         $invitation = $this->invitationService->findByToken($request->token);
 
-        if (!$invitation) {
+        if (! $invitation) {
             return $this->errorResponse('Invitation not found.', 404);
         }
 
@@ -164,8 +210,12 @@ class InvitationController extends Controller
             return $this->errorResponse('This invitation is no longer valid.');
         }
 
-        $this->invitationService->decline($invitation);
+        try {
+            $this->invitationService->decline($invitation);
 
-        return $this->successResponse('RejectAction', 'Invitation declined successfully.');
+            return $this->successResponse('RejectAction', 'Invitation declined successfully.');
+        } catch (InvalidArgumentException $e) {
+            return $this->errorResponse($e->getMessage(), 422);
+        }
     }
 }
