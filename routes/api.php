@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AuthController as TenantAuthController;
 use App\Http\Controllers\Api\InvitationController;
 use App\Http\Controllers\Api\System\AuthController;
 use App\Http\Controllers\Api\System\TenantController;
+use App\Http\Controllers\Api\System\TenantDataController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -19,7 +20,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::prefix('auth')->group(function () {
-    // Email lookup to find tenants for a user
+    // Email lookup to find organizations for a user
     Route::post('/lookup', [TenantAuthController::class, 'lookup']);
 });
 
@@ -70,6 +71,27 @@ Route::prefix('system')->group(function () {
         |--------------------------------------------------------------------------
         */
         Route::apiResource('tenants', TenantController::class);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Cross-Tenant Access (requires X-Tenant-ID header)
+        |--------------------------------------------------------------------------
+        */
+        Route::prefix('tenant')->middleware('system-admin-tenant')->group(function () {
+            // View tenant users
+            Route::get('/users', [TenantDataController::class, 'listUsers']);
+            Route::get('/users/{id}', [TenantDataController::class, 'showUser']);
+
+            // Impersonation
+            Route::post('/impersonate/{userId}', [TenantDataController::class, 'impersonate']);
+            Route::delete('/impersonate/{userId}', [TenantDataController::class, 'endImpersonation']);
+
+            // View tenant invitations
+            Route::get('/invitations', [TenantDataController::class, 'listInvitations']);
+
+            // Tenant statistics
+            Route::get('/stats', [TenantDataController::class, 'stats']);
+        });
     });
 });
 
