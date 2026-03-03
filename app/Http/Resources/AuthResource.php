@@ -16,17 +16,34 @@ class AuthResource extends BaseResource
 
     public function toArray(Request $request): array
     {
+        $person = [
+            '@type' => 'Person',
+            'identifier' => $this->id,
+            'name' => $this->name,
+            'email' => $this->email,
+            'roles' => $this->getRoleNames(),
+            'employmentType' => $this->employment_type,
+        ];
+
+        // Add guest-specific information
+        if ($this->isGuest()) {
+            $homeOrgName = $this->getHomeOrganizationDisplayName();
+            if ($homeOrgName) {
+                $person['homeOrganization'] = [
+                    '@type' => 'Organization',
+                    'name' => $homeOrgName,
+                ];
+                if ($this->home_organization_id) {
+                    $person['homeOrganization']['identifier'] = $this->home_organization_id;
+                }
+            }
+        }
+
         return [
             '@context' => $this->schemaContext(),
             '@type' => 'AuthorizeAction',
             'actionStatus' => 'CompletedActionStatus',
-            'result' => [
-                '@type' => 'Person',
-                'identifier' => $this->id,
-                'name' => $this->name,
-                'email' => $this->email,
-                'roles' => $this->getRoleNames(),
-            ],
+            'result' => $person,
             'token' => $this->token,
             'tokenType' => 'Bearer',
         ];
