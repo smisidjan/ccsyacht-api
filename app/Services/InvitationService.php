@@ -13,6 +13,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use InvalidArgumentException;
+use Spatie\Permission\Models\Role;
 
 class InvitationService
 {
@@ -138,6 +139,11 @@ class InvitationService
         return DB::transaction(function () use ($invitation, $name, $password) {
             // Create the user in this tenant's database
             $user = $invitation->createUser($name, $password);
+
+            // Ensure the role exists in Spatie (for dynamic guest roles)
+            Role::firstOrCreate(
+                ['name' => $invitation->role, 'guard_name' => 'web']
+            );
 
             // Assign Spatie role
             $user->assignRole($invitation->role);
