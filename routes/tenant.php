@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\GuestRolePermissionController;
 use App\Http\Controllers\Api\InvitationController;
 use App\Http\Controllers\Api\RegistrationRequestController;
 use App\Http\Controllers\Api\UserController;
@@ -77,5 +78,20 @@ Route::prefix('api')->middleware('tenant')->group(function () {
             Route::put('/users/{id}', [UserController::class, 'update']);
             Route::delete('/users/{id}', [UserController::class, 'destroy']);
         });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Admin Routes (Organization Settings)
+        |--------------------------------------------------------------------------
+        */
+        Route::middleware('role:admin')->group(function () {
+            // Guest Role Permissions
+            Route::get('/guest-role-permissions', [GuestRolePermissionController::class, 'index']);
+            Route::post('/guest-role-permissions', [GuestRolePermissionController::class, 'store']);
+            Route::post('/guest-role-permissions/add', [GuestRolePermissionController::class, 'addRole']);
+            Route::delete('/guest-role-permissions/{roleName}', [GuestRolePermissionController::class, 'removeRole']);
+            Route::post('/guest-role-permissions/reset', [GuestRolePermissionController::class, 'reset']);
+        });
+
     });
 });
