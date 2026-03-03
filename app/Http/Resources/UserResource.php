@@ -19,6 +19,7 @@ class UserResource extends BaseResource
             'dateCreated' => $this->formatDate($this->created_at),
             'dateModified' => $this->formatDate($this->updated_at),
             'roles' => $this->getRoleNames(),
+            'employmentType' => $this->employment_type,
         ];
 
         if ($tenant = tenant()) {
@@ -27,6 +28,20 @@ class UserResource extends BaseResource
                 'identifier' => $tenant->id,
                 'name' => $tenant->name,
             ];
+        }
+
+        // Add guest-specific information
+        if ($this->isGuest()) {
+            $homeOrgName = $this->getHomeOrganizationDisplayName();
+            if ($homeOrgName) {
+                $data['homeOrganization'] = [
+                    '@type' => 'Organization',
+                    'name' => $homeOrgName,
+                ];
+                if ($this->home_organization_id) {
+                    $data['homeOrganization']['identifier'] = $this->home_organization_id;
+                }
+            }
         }
 
         return $data;
