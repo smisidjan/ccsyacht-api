@@ -21,8 +21,8 @@ class SendInvitationRequest extends FormRequest
             return false;
         }
 
-        // Check user's role_name for permission
-        return in_array($user->role_name, ['admin', 'main user', 'invitation manager']);
+        // Use Spatie's role check instead of role_name column
+        return $user->hasAnyRole(['admin', 'main user', 'invitation manager']);
     }
 
     public function rules(): array
