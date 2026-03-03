@@ -27,14 +27,28 @@ class TenantController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
+        // Check if this will be the main organization (ccs-yacht)
+        $slug = $request->input('slug') ?? \Illuminate\Support\Str::slug($request->input('name', ''));
+        $isMainOrg = $slug === 'ccs-yacht';
+
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255', 'unique:landlord.tenants,slug'],
             'admin_email' => ['required', 'email', 'max:255'],
             'admin_name' => ['nullable', 'string', 'max:255'],
-        ]);
+        ];
 
-        $tenant = $this->tenantService->create($validated);
+        // Subscription is required for non-main organizations
+        if (! $isMainOrg) {
+            $rules['subscription'] = ['required', 'array'];
+            $rules['subscription.max_projects'] = ['required', 'integer', 'min:1'];
+            $rules['subscription.max_users'] = ['required', 'integer', 'min:1'];
+        }
+
+        $validated = $request->validate($rules);
+
+        $createdBy = $request->user('system')?->id;
+        $tenant = $this->tenantService->create($validated, $createdBy);
 
         return $this->successWithResult(
             'CreateAction',
@@ -46,6 +60,8 @@ class TenantController extends Controller
 
     public function show(Tenant $tenant): JsonResponse
     {
+        $tenant->load('subscription');
+
         return $this->resourceResponse(new TenantResource($tenant));
     }
 
@@ -55,9 +71,24 @@ class TenantController extends Controller
             'name' => ['sometimes', 'string', 'max:255'],
             'slug' => ['sometimes', 'string', 'max:255', 'unique:landlord.tenants,slug,' . $tenant->id],
             'active' => ['sometimes', 'boolean'],
+            // Subscription updates
+            'subscription' => ['sometimes', 'array'],
+            'subscription.max_projects' => ['sometimes', 'integer', 'min:1'],
+            'subscription.max_users' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'subscription.status' => ['sometimes', 'string', 'in:active,cancelled'],
         ]);
 
-        $tenant = $this->tenantService->update($tenant, $validated);
+        // Update tenant basic info
+        $tenantData = collect($validated)->except('subscription')->toArray();
+        if (! empty($tenantData)) {
+            $tenant = $this->tenantService->update($tenant, $tenantData);
+        }
+
+        // Update subscription if provided
+        if (isset($validated['subscription'])) {
+            $this->tenantService->updateSubscription($tenant, $validated['subscription']);
+            $tenant->load('subscription');
+        }
 
         return $this->successWithResult(
             'UpdateAction',
