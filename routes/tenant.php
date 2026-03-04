@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\RegistrationRequestController;
 use App\Http\Controllers\Api\ShipyardController;
 use App\Http\Controllers\Api\UserController;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -58,6 +59,13 @@ Route::prefix('api')->middleware('tenant')->group(function () {
     */
 
     Route::middleware('auth:sanctum')->group(function () {
+
+        /*
+        |--------------------------------------------------------------------------
+        | Broadcasting Authentication
+        |--------------------------------------------------------------------------
+        */
+        Broadcast::routes();
 
         /*
         |--------------------------------------------------------------------------
