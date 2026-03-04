@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\Project;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Project\StageResource;
 use App\Models\Area;
+use App\Models\LogbookEntry;
 use App\Models\Project;
 use App\Models\Stage;
 use Illuminate\Http\JsonResponse;
@@ -59,6 +60,15 @@ class StageController extends Controller
         $stage = $area->stages()->create($validated);
         $stage->load('area');
 
+        // Log the action
+        LogbookEntry::log(
+            $project,
+            'stage_created',
+            "Created stage '{$stage->name}' in area '{$area->name}'",
+            $request->user(),
+            ['stage_id' => $stage->id, 'stage_name' => $stage->name, 'area_name' => $area->name]
+        );
+
         return $this->resourceResponse(new StageResource($stage), 201);
     }
 
@@ -91,6 +101,15 @@ class StageController extends Controller
         $stage->update($validated);
         $stage->load('area');
 
+        // Log the action
+        LogbookEntry::log(
+            $project,
+            'stage_updated',
+            "Updated stage '{$stage->name}'",
+            $request->user(),
+            ['stage_id' => $stage->id, 'stage_name' => $stage->name]
+        );
+
         return $this->resourceResponse(new StageResource($stage));
     }
 
@@ -98,27 +117,48 @@ class StageController extends Controller
     {
         $project = Project::findOrFail($projectId);
 
-        $stage = Stage::whereHas('area.deck', fn($q) => $q->where('project_id', $project->id))
+        $stage = Stage::with('area')->whereHas('area.deck', fn($q) => $q->where('project_id', $project->id))
             ->findOrFail($stageId);
+
+        $oldStatus = $stage->status;
 
         $validated = $request->validate([
             'status' => ['required', Rule::in(['not_started', 'in_progress', 'completed'])],
         ]);
 
         $stage->update($validated);
-        $stage->load('area');
+
+        // Log the action
+        LogbookEntry::log(
+            $project,
+            'stage_status_changed',
+            "Changed stage '{$stage->name}' status from '{$oldStatus}' to '{$validated['status']}'",
+            $request->user(),
+            ['stage_id' => $stage->id, 'stage_name' => $stage->name, 'old_status' => $oldStatus, 'new_status' => $validated['status']]
+        );
 
         return $this->resourceResponse(new StageResource($stage));
     }
 
-    public function destroy(string $projectId, string $stageId): JsonResponse
+    public function destroy(string $projectId, string $stageId, Request $request): JsonResponse
     {
         $project = Project::findOrFail($projectId);
 
-        $stage = Stage::whereHas('area.deck', fn($q) => $q->where('project_id', $project->id))
+        $stage = Stage::with('area')->whereHas('area.deck', fn($q) => $q->where('project_id', $project->id))
             ->findOrFail($stageId);
 
+        $stageName = $stage->name;
+        $areaName = $stage->area->name;
         $stage->delete();
+
+        // Log the action
+        LogbookEntry::log(
+            $project,
+            'stage_deleted',
+            "Deleted stage '{$stageName}' from area '{$areaName}'",
+            $request->user(),
+            ['stage_name' => $stageName, 'area_name' => $areaName]
+        );
 
         return $this->successResponse('DeleteAction', 'Stage deleted successfully.');
     }

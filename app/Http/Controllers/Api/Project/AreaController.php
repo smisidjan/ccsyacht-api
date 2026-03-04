@@ -7,7 +7,7 @@ namespace App\Http\Controllers\Api\Project;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Project\AreaResource;
 use App\Models\Area;
-use App\Models\Deck;
+use App\Models\LogbookEntry;
 use App\Models\Project;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -54,6 +54,15 @@ class AreaController extends Controller
         $area->load('deck');
         $area->loadCount('stages');
 
+        // Log the action
+        LogbookEntry::log(
+            $project,
+            'area_created',
+            "Created area '{$area->name}' in deck '{$deck->name}'",
+            $request->user(),
+            ['area_id' => $area->id, 'area_name' => $area->name, 'deck_name' => $deck->name]
+        );
+
         return $this->resourceResponse(new AreaResource($area), 201);
     }
 
@@ -86,17 +95,37 @@ class AreaController extends Controller
         $area->load('deck');
         $area->loadCount('stages');
 
+        // Log the action
+        LogbookEntry::log(
+            $project,
+            'area_updated',
+            "Updated area '{$area->name}'",
+            $request->user(),
+            ['area_id' => $area->id, 'area_name' => $area->name]
+        );
+
         return $this->resourceResponse(new AreaResource($area));
     }
 
-    public function destroy(string $projectId, string $areaId): JsonResponse
+    public function destroy(string $projectId, string $areaId, Request $request): JsonResponse
     {
         $project = Project::findOrFail($projectId);
 
-        $area = Area::whereHas('deck', fn($q) => $q->where('project_id', $project->id))
+        $area = Area::with('deck')->whereHas('deck', fn($q) => $q->where('project_id', $project->id))
             ->findOrFail($areaId);
 
+        $areaName = $area->name;
+        $deckName = $area->deck->name;
         $area->delete();
+
+        // Log the action
+        LogbookEntry::log(
+            $project,
+            'area_deleted',
+            "Deleted area '{$areaName}' from deck '{$deckName}'",
+            $request->user(),
+            ['area_name' => $areaName, 'deck_name' => $deckName]
+        );
 
         return $this->successResponse('DeleteAction', 'Area deleted successfully.');
     }
