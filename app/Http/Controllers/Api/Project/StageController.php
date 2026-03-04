@@ -10,6 +10,7 @@ use App\Models\Area;
 use App\Models\LogbookEntry;
 use App\Models\Project;
 use App\Models\Stage;
+use App\Traits\BroadcastsProjectChanges;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -17,6 +18,7 @@ use Illuminate\Validation\Rule;
 
 class StageController extends Controller
 {
+    use BroadcastsProjectChanges;
     public function index(string $projectId, string $areaId): AnonymousResourceCollection
     {
         $project = Project::findOrFail($projectId);
@@ -69,6 +71,9 @@ class StageController extends Controller
             ['stage_id' => $stage->id, 'stage_name' => $stage->name, 'area_name' => $area->name]
         );
 
+        // Broadcast the change
+        $this->broadcastChange($project, 'stage', 'created', $stage);
+
         return $this->resourceResponse(new StageResource($stage), 201);
     }
 
@@ -110,6 +115,9 @@ class StageController extends Controller
             ['stage_id' => $stage->id, 'stage_name' => $stage->name]
         );
 
+        // Broadcast the change
+        $this->broadcastChange($project, 'stage', 'updated', $stage);
+
         return $this->resourceResponse(new StageResource($stage));
     }
 
@@ -137,6 +145,9 @@ class StageController extends Controller
             ['stage_id' => $stage->id, 'stage_name' => $stage->name, 'old_status' => $oldStatus, 'new_status' => $validated['status']]
         );
 
+        // Broadcast the change
+        $this->broadcastChange($project, 'stage', 'updated', $stage);
+
         return $this->resourceResponse(new StageResource($stage));
     }
 
@@ -148,6 +159,7 @@ class StageController extends Controller
             ->findOrFail($stageId);
 
         $stageName = $stage->name;
+        $stageId = $stage->id;
         $areaName = $stage->area->name;
         $stage->delete();
 
@@ -159,6 +171,9 @@ class StageController extends Controller
             $request->user(),
             ['stage_name' => $stageName, 'area_name' => $areaName]
         );
+
+        // Broadcast the change
+        $this->broadcastChange($project, 'stage', 'deleted', null, ['id' => $stageId, 'name' => $stageName]);
 
         return $this->successResponse('DeleteAction', 'Stage deleted successfully.');
     }

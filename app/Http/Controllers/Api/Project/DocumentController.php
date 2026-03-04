@@ -7,6 +7,7 @@ use App\Http\Resources\Project\DocumentResource;
 use App\Models\Document;
 use App\Models\LogbookEntry;
 use App\Models\Project;
+use App\Traits\BroadcastsProjectChanges;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Storage;
 
 class DocumentController extends Controller
 {
+    use BroadcastsProjectChanges;
     public function index(string $projectId, Request $request): AnonymousResourceCollection
     {
         $project = Project::findOrFail($projectId);
@@ -83,6 +85,9 @@ class DocumentController extends Controller
             ['document_id' => $document->id, 'document_type' => $documentType->name]
         );
 
+        // Broadcast the change
+        $this->broadcastChange($project, 'document', 'created', $document);
+
         return $this->resourceResponse(new DocumentResource($document), 201);
     }
 
@@ -108,6 +113,7 @@ class DocumentController extends Controller
         })->findOrFail($docId);
 
         $documentTitle = $document->title;
+        $documentId = $document->id;
         $documentType = $document->documentType->name;
 
         // Delete the file
@@ -123,6 +129,9 @@ class DocumentController extends Controller
             $request->user(),
             ['document_title' => $documentTitle, 'document_type' => $documentType]
         );
+
+        // Broadcast the change
+        $this->broadcastChange($project, 'document', 'deleted', null, ['id' => $documentId, 'title' => $documentTitle]);
 
         return $this->successResponse('DeleteAction', 'Document deleted successfully.');
     }

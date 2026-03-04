@@ -9,12 +9,14 @@ use App\Http\Resources\Project\AreaResource;
 use App\Models\Area;
 use App\Models\LogbookEntry;
 use App\Models\Project;
+use App\Traits\BroadcastsProjectChanges;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class AreaController extends Controller
 {
+    use BroadcastsProjectChanges;
     public function index(string $projectId, Request $request): AnonymousResourceCollection
     {
         $project = Project::findOrFail($projectId);
@@ -63,6 +65,9 @@ class AreaController extends Controller
             ['area_id' => $area->id, 'area_name' => $area->name, 'deck_name' => $deck->name]
         );
 
+        // Broadcast the change
+        $this->broadcastChange($project, 'area', 'created', $area);
+
         return $this->resourceResponse(new AreaResource($area), 201);
     }
 
@@ -104,6 +109,9 @@ class AreaController extends Controller
             ['area_id' => $area->id, 'area_name' => $area->name]
         );
 
+        // Broadcast the change
+        $this->broadcastChange($project, 'area', 'updated', $area);
+
         return $this->resourceResponse(new AreaResource($area));
     }
 
@@ -115,6 +123,7 @@ class AreaController extends Controller
             ->findOrFail($areaId);
 
         $areaName = $area->name;
+        $areaId = $area->id;
         $deckName = $area->deck->name;
         $area->delete();
 
@@ -126,6 +135,9 @@ class AreaController extends Controller
             $request->user(),
             ['area_name' => $areaName, 'deck_name' => $deckName]
         );
+
+        // Broadcast the change
+        $this->broadcastChange($project, 'area', 'deleted', null, ['id' => $areaId, 'name' => $areaName]);
 
         return $this->successResponse('DeleteAction', 'Area deleted successfully.');
     }
