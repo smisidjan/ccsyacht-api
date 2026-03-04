@@ -106,4 +106,26 @@ class ProjectController extends Controller
 
         return $this->resourceResponse(new ProjectResource($project->fresh(['shipyard', 'creator'])));
     }
+
+    public function downloadGeneralArrangement(string $id): mixed
+    {
+        $project = Project::findOrFail($id);
+
+        if (!$project->general_arrangement_path) {
+            return $this->errorResponse('No general arrangement file uploaded.', 404);
+        }
+
+        $path = Storage::disk('local')->path($project->general_arrangement_path);
+
+        if (!file_exists($path)) {
+            return $this->errorResponse('File not found.', 404);
+        }
+
+        $mimeType = Storage::disk('local')->mimeType($project->general_arrangement_path);
+        $fileName = basename($project->general_arrangement_path);
+
+        return response()->download($path, $fileName, [
+            'Content-Type' => $mimeType,
+        ]);
+    }
 }
