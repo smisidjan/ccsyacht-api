@@ -41,22 +41,24 @@ class RoleSeeder extends Seeder
                 'process_registrations',
             ],
 
-            // User: Standaard medewerker. Kan gebruikers, shipyards en projecten bekijken
+            // User: Standaard medewerker. Kan gebruikers, shipyards, projecten en logbook bekijken
             'user' => [
                 'view_users',
                 'view_shipyards',
                 'view_projects',
+                'view_logbook',
             ],
 
             // Surveyor: Inspecteur. Kan gebruikers en shipyards bekijken,
-            // projecten bekijken/bewerken, project leden, document types, documenten,
-            // decks, areas en stages volledig beheren
+            // projecten bekijken/bewerken, project leden/signers, document types, documenten,
+            // decks, areas, stages en logbook volledig beheren
             'surveyor' => [
                 'view_users',
                 'view_shipyards',
                 'view_projects',
                 'edit_projects',
                 'manage_project_members',
+                'manage_project_signers',
                 'view_document_types',
                 'create_document_types',
                 'edit_document_types',
@@ -77,11 +79,12 @@ class RoleSeeder extends Seeder
                 'create_stages',
                 'edit_stages',
                 'delete_stages',
+                'view_logbook',
             ],
 
             // Painter: Schilder. Kan gebruikers en shipyards bekijken,
             // projecten bekijken/bewerken, documenten bekijken/downloaden/uploaden,
-            // decks/areas/stages bekijken en bewerken
+            // decks/areas/stages bekijken en bewerken, logbook bekijken
             'painter' => [
                 'view_users',
                 'view_shipyards',
@@ -97,6 +100,7 @@ class RoleSeeder extends Seeder
                 'edit_areas',
                 'view_stages',
                 'edit_stages',
+                'view_logbook',
             ],
 
             // =========================================================================
@@ -104,7 +108,7 @@ class RoleSeeder extends Seeder
             // =========================================================================
 
             // Viewer: Read-only toegang. Kan shipyards, projecten, document types,
-            // documenten, decks, areas en stages bekijken
+            // documenten, decks, areas, stages en logbook bekijken
             'viewer' => [
                 'view_shipyards',
                 'view_projects',
@@ -113,6 +117,7 @@ class RoleSeeder extends Seeder
                 'view_decks',
                 'view_areas',
                 'view_stages',
+                'view_logbook',
             ],
 
             // Owner Representative: Vertegenwoordiger van de eigenaar.
@@ -125,6 +130,7 @@ class RoleSeeder extends Seeder
                 'view_decks',
                 'view_areas',
                 'view_stages',
+                'view_logbook',
             ],
         ];
 

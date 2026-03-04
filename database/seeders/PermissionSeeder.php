@@ -40,6 +40,7 @@ class PermissionSeeder extends Seeder
             'edit_projects',
             'delete_projects',
             'manage_project_members',
+            'manage_project_signers',
 
             // Document Types
             'view_document_types',
@@ -70,6 +71,9 @@ class PermissionSeeder extends Seeder
             'create_stages',
             'edit_stages',
             'delete_stages',
+
+            // Logbook
+            'view_logbook',
         ];
 
         foreach ($permissions as $permission) {
