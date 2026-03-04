@@ -51,41 +51,60 @@ Route::prefix('api')->middleware('tenant')->group(function () {
 
         /*
         |--------------------------------------------------------------------------
-        | Admin/Main User/Invitation Manager Routes
+        | User Management
         |--------------------------------------------------------------------------
         */
-        Route::middleware('role:admin|main user|invitation manager')->group(function () {
-            // Invitations Management
-            Route::get('/invitations', [InvitationController::class, 'index']);
-            Route::post('/invitations', [InvitationController::class, 'store']);
-            Route::post('/invitations/{id}/resend', [InvitationController::class, 'resend']);
-            Route::delete('/invitations/{id}', [InvitationController::class, 'cancel']);
-
-            // Registration Requests Management
-            Route::get('/registration-requests', [RegistrationRequestController::class, 'index']);
-            Route::get('/registration-requests/{id}', [RegistrationRequestController::class, 'show']);
-            Route::post('/registration-requests/{id}/process', [RegistrationRequestController::class, 'process']);
-        });
-
-        /*
-        |--------------------------------------------------------------------------
-        | Admin/Main User Routes (User Management)
-        |--------------------------------------------------------------------------
-        */
-        Route::middleware('role:admin|main user')->group(function () {
+        Route::middleware('permission:view_users')->group(function () {
             Route::get('/users', [UserController::class, 'index']);
             Route::get('/users/{id}', [UserController::class, 'show']);
+        });
+
+        Route::middleware('permission:edit_users')->group(function () {
             Route::put('/users/{id}', [UserController::class, 'update']);
+        });
+
+        Route::middleware('permission:delete_users')->group(function () {
             Route::delete('/users/{id}', [UserController::class, 'destroy']);
         });
 
         /*
         |--------------------------------------------------------------------------
-        | Admin Routes (Organization Settings)
+        | Invitation Management
         |--------------------------------------------------------------------------
         */
-        Route::middleware('role:admin')->group(function () {
-            // Guest Role Permissions
+        Route::middleware('permission:view_invitations')->group(function () {
+            Route::get('/invitations', [InvitationController::class, 'index']);
+        });
+
+        Route::middleware('permission:create_invitations')->group(function () {
+            Route::post('/invitations', [InvitationController::class, 'store']);
+        });
+
+        Route::middleware('permission:manage_invitations')->group(function () {
+            Route::post('/invitations/{id}/resend', [InvitationController::class, 'resend']);
+            Route::delete('/invitations/{id}', [InvitationController::class, 'cancel']);
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Registration Request Management
+        |--------------------------------------------------------------------------
+        */
+        Route::middleware('permission:view_registrations')->group(function () {
+            Route::get('/registration-requests', [RegistrationRequestController::class, 'index']);
+            Route::get('/registration-requests/{id}', [RegistrationRequestController::class, 'show']);
+        });
+
+        Route::middleware('permission:process_registrations')->group(function () {
+            Route::post('/registration-requests/{id}/process', [RegistrationRequestController::class, 'process']);
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Organization Settings (Master tenant only)
+        |--------------------------------------------------------------------------
+        */
+        Route::middleware(['master-tenant', 'permission:manage_guest_roles'])->group(function () {
             Route::get('/guest-role-permissions', [GuestRolePermissionController::class, 'index']);
             Route::post('/guest-role-permissions', [GuestRolePermissionController::class, 'store']);
             Route::post('/guest-role-permissions/add', [GuestRolePermissionController::class, 'addRole']);
