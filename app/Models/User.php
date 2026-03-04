@@ -110,6 +110,30 @@ class User extends Authenticatable
     }
 
     /**
+     * Permissions that are only available for the master tenant (CCS Yacht).
+     */
+    private const MASTER_TENANT_ONLY_PERMISSIONS = [
+        'manage_guest_roles',
+        'manage_settings',
+    ];
+
+    /**
+     * Get effective permissions, filtering out master-tenant-only permissions for other tenants.
+     */
+    public function getEffectivePermissions(): array
+    {
+        $permissions = $this->getAllPermissions()->pluck('name')->values()->toArray();
+
+        // Filter out master-tenant-only permissions for non-master tenants
+        $tenant = tenant();
+        if ($tenant && $tenant->slug !== 'ccs-yacht') {
+            $permissions = array_values(array_diff($permissions, self::MASTER_TENANT_ONLY_PERMISSIONS));
+        }
+
+        return $permissions;
+    }
+
+    /**
      * Get the home organization display name (from relation or free text).
      */
     public function getHomeOrganizationDisplayName(): ?string
@@ -160,21 +184,35 @@ class User extends Authenticatable
             'identifier' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
-            'worksFor' => [
-                '@type' => 'EmployeeRole',
-                'roleName' => $this->role_name,
-                'employmentType' => $this->employment_type,
-            ],
+            'roles' => $this->getRoleNames(),
+            'permissions' => $this->getEffectivePermissions(),
+            'employmentType' => $this->employment_type,
         ];
 
         if ($this->named_position) {
-            $data['worksFor']['namedPosition'] = $this->named_position;
+            $data['namedPosition'] = $this->named_position;
         }
 
+        // Add current organization
+        if ($tenant = tenant()) {
+            $data['memberOf'] = [
+                '@type' => 'Organization',
+                'identifier' => $tenant->id,
+                'name' => $tenant->name,
+            ];
+        }
+
+        // Add guest-specific information
         if ($this->isGuest()) {
             $homeOrgName = $this->getHomeOrganizationDisplayName();
             if ($homeOrgName) {
-                $data['worksFor']['description'] = "Guest from: {$homeOrgName}";
+                $data['homeOrganization'] = [
+                    '@type' => 'Organization',
+                    'name' => $homeOrgName,
+                ];
+                if ($this->home_organization_id) {
+                    $data['homeOrganization']['identifier'] = $this->home_organization_id;
+                }
             }
         }
 
