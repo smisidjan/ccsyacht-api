@@ -40,6 +40,7 @@ class DocumentTypeController extends Controller
         }
 
         $documentType = $project->documentTypes()->create($validated);
+        $documentType->loadCount('documents');
 
         return $this->resourceResponse(new DocumentTypeResource($documentType), 201);
     }
@@ -64,8 +65,10 @@ class DocumentTypeController extends Controller
         ]);
 
         $documentType->update($validated);
+        $documentType->refresh();
+        $documentType->loadCount('documents');
 
-        return $this->resourceResponse(new DocumentTypeResource($documentType->fresh()));
+        return $this->resourceResponse(new DocumentTypeResource($documentType));
     }
 
     public function destroy(string $projectId, string $typeId): JsonResponse

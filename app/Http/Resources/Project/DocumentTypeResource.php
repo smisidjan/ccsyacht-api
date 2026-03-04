@@ -9,22 +9,16 @@ class DocumentTypeResource extends BaseResource
 {
     public function toArray(Request $request): array
     {
-        $data = [
+        return [
             '@context' => $this->schemaContext(),
             '@type' => 'DefinedTerm',
             'identifier' => $this->id,
             'name' => $this->name,
             'isRequired' => $this->is_required,
             'position' => $this->sort_order,
+            'documentCount' => $this->whenCounted('documents'),
             'dateCreated' => $this->formatDate($this->created_at),
             'dateModified' => $this->formatDate($this->updated_at),
         ];
-
-        // Include document count if loaded
-        if ($this->relationLoaded('documents')) {
-            $data['documentCount'] = $this->documents->count();
-        }
-
-        return $data;
     }
 }
