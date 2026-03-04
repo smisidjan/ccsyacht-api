@@ -5,7 +5,11 @@ declare(strict_types=1);
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\GuestRolePermissionController;
 use App\Http\Controllers\Api\InvitationController;
+use App\Http\Controllers\Api\Project\DocumentController;
+use App\Http\Controllers\Api\Project\DocumentTypeController;
+use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\RegistrationRequestController;
+use App\Http\Controllers\Api\ShipyardController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -97,6 +101,96 @@ Route::prefix('api')->middleware('tenant')->group(function () {
 
         Route::middleware('permission:process_registrations')->group(function () {
             Route::post('/registration-requests/{id}/process', [RegistrationRequestController::class, 'process']);
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Shipyard Management
+        |--------------------------------------------------------------------------
+        */
+        Route::middleware('permission:view_shipyards')->group(function () {
+            Route::get('/shipyards', [ShipyardController::class, 'index']);
+            Route::get('/shipyards/{id}', [ShipyardController::class, 'show']);
+        });
+
+        Route::middleware('permission:create_shipyards')->group(function () {
+            Route::post('/shipyards', [ShipyardController::class, 'store']);
+        });
+
+        Route::middleware('permission:edit_shipyards')->group(function () {
+            Route::put('/shipyards/{id}', [ShipyardController::class, 'update']);
+        });
+
+        Route::middleware('permission:delete_shipyards')->group(function () {
+            Route::delete('/shipyards/{id}', [ShipyardController::class, 'destroy']);
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Project Management
+        |--------------------------------------------------------------------------
+        */
+        Route::middleware('permission:view_projects')->group(function () {
+            Route::get('/projects', [ProjectController::class, 'index']);
+            Route::get('/projects/{id}', [ProjectController::class, 'show']);
+        });
+
+        Route::middleware('permission:create_projects')->group(function () {
+            Route::post('/projects', [ProjectController::class, 'store']);
+        });
+
+        Route::middleware('permission:edit_projects')->group(function () {
+            Route::put('/projects/{id}', [ProjectController::class, 'update']);
+            Route::post('/projects/{id}/general-arrangement', [ProjectController::class, 'uploadGeneralArrangement']);
+        });
+
+        Route::middleware('permission:delete_projects')->group(function () {
+            Route::delete('/projects/{id}', [ProjectController::class, 'destroy']);
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Project Document Types
+        |--------------------------------------------------------------------------
+        */
+        Route::middleware('permission:view_document_types')->group(function () {
+            Route::get('/projects/{projectId}/document-types', [DocumentTypeController::class, 'index']);
+            Route::get('/projects/{projectId}/document-types/{typeId}', [DocumentTypeController::class, 'show']);
+        });
+
+        Route::middleware('permission:create_document_types')->group(function () {
+            Route::post('/projects/{projectId}/document-types', [DocumentTypeController::class, 'store']);
+        });
+
+        Route::middleware('permission:edit_document_types')->group(function () {
+            Route::put('/projects/{projectId}/document-types/{typeId}', [DocumentTypeController::class, 'update']);
+        });
+
+        Route::middleware('permission:delete_document_types')->group(function () {
+            Route::delete('/projects/{projectId}/document-types/{typeId}', [DocumentTypeController::class, 'destroy']);
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Project Documents
+        |--------------------------------------------------------------------------
+        */
+        Route::middleware('permission:view_documents')->group(function () {
+            Route::get('/projects/{projectId}/documents', [DocumentController::class, 'index']);
+            Route::get('/projects/{projectId}/documents/{docId}', [DocumentController::class, 'show']);
+            Route::get('/projects/{projectId}/document-types/{typeId}/documents', [DocumentController::class, 'indexByType']);
+        });
+
+        Route::middleware('permission:download_documents')->group(function () {
+            Route::get('/projects/{projectId}/documents/{docId}/download', [DocumentController::class, 'download']);
+        });
+
+        Route::middleware('permission:upload_documents')->group(function () {
+            Route::post('/projects/{projectId}/document-types/{typeId}/documents', [DocumentController::class, 'store']);
+        });
+
+        Route::middleware('permission:delete_documents')->group(function () {
+            Route::delete('/projects/{projectId}/documents/{docId}', [DocumentController::class, 'destroy']);
         });
 
         /*
