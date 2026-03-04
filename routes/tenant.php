@@ -272,8 +272,11 @@ Route::prefix('api')->middleware('tenant')->group(function () {
         | Project Members
         |--------------------------------------------------------------------------
         */
-        Route::middleware('permission:manage_project_members')->group(function () {
+          Route::middleware('permission:view_project_members')->group(function () {
             Route::get('/projects/{projectId}/members', [MemberController::class, 'index']);
+        });
+
+        Route::middleware('permission:manage_project_members')->group(function () {
             Route::post('/projects/{projectId}/members', [MemberController::class, 'store']);
             Route::delete('/projects/{projectId}/members/{userId}', [MemberController::class, 'destroy']);
         });
@@ -283,8 +286,10 @@ Route::prefix('api')->middleware('tenant')->group(function () {
         | Project Signers
         |--------------------------------------------------------------------------
         */
-        Route::middleware('permission:manage_project_signers')->group(function () {
+         Route::middleware('permission:view_project_signers')->group(function () {
             Route::get('/projects/{projectId}/signers', [SignerController::class, 'index']);
+        });
+        Route::middleware('permission:manage_project_signers')->group(function () {
             Route::post('/projects/{projectId}/signers', [SignerController::class, 'store']);
             Route::delete('/projects/{projectId}/signers/{userId}', [SignerController::class, 'destroy']);
         });
