@@ -8,12 +8,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Project\DeckResource;
 use App\Models\LogbookEntry;
 use App\Models\Project;
+use App\Traits\BroadcastsProjectChanges;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class DeckController extends Controller
 {
+    use BroadcastsProjectChanges;
     public function index(string $projectId): AnonymousResourceCollection
     {
         $project = Project::findOrFail($projectId);
@@ -53,6 +55,9 @@ class DeckController extends Controller
             ['deck_id' => $deck->id, 'deck_name' => $deck->name]
         );
 
+        // Broadcast the change
+        $this->broadcastChange($project, 'deck', 'created', $deck);
+
         return $this->resourceResponse(new DeckResource($deck), 201);
     }
 
@@ -91,6 +96,9 @@ class DeckController extends Controller
             ['deck_id' => $deck->id, 'deck_name' => $deck->name]
         );
 
+        // Broadcast the change
+        $this->broadcastChange($project, 'deck', 'updated', $deck);
+
         return $this->resourceResponse(new DeckResource($deck));
     }
 
@@ -100,6 +108,7 @@ class DeckController extends Controller
         $deck = $project->decks()->findOrFail($deckId);
 
         $deckName = $deck->name;
+        $deckId = $deck->id;
         $deck->delete();
 
         // Log the action
@@ -110,6 +119,9 @@ class DeckController extends Controller
             $request->user(),
             ['deck_name' => $deckName]
         );
+
+        // Broadcast the change
+        $this->broadcastChange($project, 'deck', 'deleted', null, ['id' => $deckId, 'name' => $deckName]);
 
         return $this->successResponse('DeleteAction', 'Deck deleted successfully.');
     }

@@ -9,12 +9,14 @@ use App\Http\Resources\Project\SignerResource;
 use App\Models\LogbookEntry;
 use App\Models\Project;
 use App\Models\User;
+use App\Traits\BroadcastsProjectChanges;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class SignerController extends Controller
 {
+    use BroadcastsProjectChanges;
     public function index(string $projectId): AnonymousResourceCollection
     {
         $project = Project::findOrFail($projectId);
@@ -58,6 +60,9 @@ class SignerController extends Controller
             ['user_id' => $validated['user_id'], 'user_name' => $user->name]
         );
 
+        // Broadcast the change
+        $this->broadcastChange($project, 'signer', 'created', $signer);
+
         return $this->resourceResponse(new SignerResource($signer), 201);
     }
 
@@ -72,6 +77,7 @@ class SignerController extends Controller
         }
 
         $user = $signer->user;
+        $signerId = $signer->id;
         $signer->delete();
 
         // Log the action
@@ -82,6 +88,9 @@ class SignerController extends Controller
             $request->user(),
             ['user_id' => $userId, 'user_name' => $user->name]
         );
+
+        // Broadcast the change
+        $this->broadcastChange($project, 'signer', 'deleted', null, ['id' => $signerId, 'user_id' => $userId]);
 
         return $this->successResponse('DeleteAction', 'Signer removed successfully.');
     }
