@@ -11,7 +11,7 @@ use Illuminate\Support\Collection;
 
 /**
  * Configures which roles guests are allowed to have in an organization.
- * Default: only 'viewer' role is allowed for guests.
+ * Default: 'viewer' and 'owner representative' roles are allowed for guests.
  */
 class GuestRolePermission extends Model
 {
@@ -27,7 +27,7 @@ class GuestRolePermission extends Model
     /**
      * Default allowed roles for guests when no permissions are configured.
      */
-    public const DEFAULT_ALLOWED_ROLES = ['viewer'];
+    public const DEFAULT_ALLOWED_ROLES = ['viewer', 'owner representative'];
 
     // =========================================================================
     // Relationships
