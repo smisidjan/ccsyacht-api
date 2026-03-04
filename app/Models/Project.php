@@ -86,6 +86,30 @@ class Project extends Model
         return $this->hasMany(Deck::class)->orderBy('sort_order');
     }
 
+    /**
+     * Project members.
+     */
+    public function members(): HasMany
+    {
+        return $this->hasMany(ProjectMember::class);
+    }
+
+    /**
+     * Default signers for this project.
+     */
+    public function signers(): HasMany
+    {
+        return $this->hasMany(ProjectSigner::class);
+    }
+
+    /**
+     * Logbook entries for this project.
+     */
+    public function logbookEntries(): HasMany
+    {
+        return $this->hasMany(LogbookEntry::class);
+    }
+
     // =========================================================================
     // Status Helpers
     // =========================================================================

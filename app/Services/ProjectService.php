@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\LogbookEntry;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -37,7 +38,20 @@ class ProjectService
 
         $data['created_by'] = $creator->id;
 
-        return Project::create($data);
+        $project = Project::create($data);
+
+        // Add creator as member
+        $project->members()->create(['user_id' => $creator->id]);
+
+        // Log project creation
+        LogbookEntry::log(
+            $project,
+            'project_created',
+            "Project '{$project->name}' was created",
+            $creator
+        );
+
+        return $project;
     }
 
     public function update(Project $project, array $data): Project
