@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\Project;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Project\DocumentResource;
 use App\Models\Document;
-use App\Models\DocumentType;
+use App\Models\LogbookEntry;
 use App\Models\Project;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -74,6 +74,15 @@ class DocumentController extends Controller
 
         $document->load(['uploader', 'documentType']);
 
+        // Log the action
+        LogbookEntry::log(
+            $project,
+            'document_uploaded',
+            "Uploaded document '{$document->title}' to {$documentType->name}",
+            $request->user(),
+            ['document_id' => $document->id, 'document_type' => $documentType->name]
+        );
+
         return $this->resourceResponse(new DocumentResource($document), 201);
     }
 
@@ -90,18 +99,30 @@ class DocumentController extends Controller
         return $this->resourceResponse(new DocumentResource($document));
     }
 
-    public function destroy(string $projectId, string $docId): JsonResponse
+    public function destroy(string $projectId, string $docId, Request $request): JsonResponse
     {
         $project = Project::findOrFail($projectId);
 
-        $document = Document::whereHas('documentType', function ($q) use ($project) {
+        $document = Document::with('documentType')->whereHas('documentType', function ($q) use ($project) {
             $q->where('project_id', $project->id);
         })->findOrFail($docId);
+
+        $documentTitle = $document->title;
+        $documentType = $document->documentType->name;
 
         // Delete the file
         Storage::disk('local')->delete($document->file_path);
 
         $document->delete();
+
+        // Log the action
+        LogbookEntry::log(
+            $project,
+            'document_deleted',
+            "Deleted document '{$documentTitle}' from {$documentType}",
+            $request->user(),
+            ['document_title' => $documentTitle, 'document_type' => $documentType]
+        );
 
         return $this->successResponse('DeleteAction', 'Document deleted successfully.');
     }

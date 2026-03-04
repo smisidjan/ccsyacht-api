@@ -6,7 +6,7 @@ namespace App\Http\Controllers\Api\Project;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Project\DeckResource;
-use App\Models\Deck;
+use App\Models\LogbookEntry;
 use App\Models\Project;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -44,6 +44,15 @@ class DeckController extends Controller
         $deck = $project->decks()->create($validated);
         $deck->loadCount(['areas', 'stages']);
 
+        // Log the action
+        LogbookEntry::log(
+            $project,
+            'deck_created',
+            "Created deck '{$deck->name}'",
+            $request->user(),
+            ['deck_id' => $deck->id, 'deck_name' => $deck->name]
+        );
+
         return $this->resourceResponse(new DeckResource($deck), 201);
     }
 
@@ -73,15 +82,34 @@ class DeckController extends Controller
         $deck->update($validated);
         $deck->loadCount(['areas', 'stages']);
 
+        // Log the action
+        LogbookEntry::log(
+            $project,
+            'deck_updated',
+            "Updated deck '{$deck->name}'",
+            $request->user(),
+            ['deck_id' => $deck->id, 'deck_name' => $deck->name]
+        );
+
         return $this->resourceResponse(new DeckResource($deck));
     }
 
-    public function destroy(string $projectId, string $deckId): JsonResponse
+    public function destroy(string $projectId, string $deckId, Request $request): JsonResponse
     {
         $project = Project::findOrFail($projectId);
         $deck = $project->decks()->findOrFail($deckId);
 
+        $deckName = $deck->name;
         $deck->delete();
+
+        // Log the action
+        LogbookEntry::log(
+            $project,
+            'deck_deleted',
+            "Deleted deck '{$deckName}'",
+            $request->user(),
+            ['deck_name' => $deckName]
+        );
 
         return $this->successResponse('DeleteAction', 'Deck deleted successfully.');
     }
