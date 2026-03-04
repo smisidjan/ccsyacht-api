@@ -19,6 +19,7 @@ class UserResource extends BaseResource
             'dateCreated' => $this->formatDate($this->created_at),
             'dateModified' => $this->formatDate($this->updated_at),
             'roles' => $this->getRoleNames(),
+            'permissions' => $this->getEffectivePermissions(),
             'employmentType' => $this->employment_type,
         ];
 

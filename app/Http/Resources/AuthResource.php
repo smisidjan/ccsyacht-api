@@ -22,6 +22,7 @@ class AuthResource extends BaseResource
             'name' => $this->name,
             'email' => $this->email,
             'roles' => $this->getRoleNames(),
+            'permissions' => $this->getEffectivePermissions(),
             'employmentType' => $this->employment_type,
         ];
 
