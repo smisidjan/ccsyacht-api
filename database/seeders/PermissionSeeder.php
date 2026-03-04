@@ -52,6 +52,24 @@ class PermissionSeeder extends Seeder
             'download_documents',
             'upload_documents',
             'delete_documents',
+
+            // Decks
+            'view_decks',
+            'create_decks',
+            'edit_decks',
+            'delete_decks',
+
+            // Areas
+            'view_areas',
+            'create_areas',
+            'edit_areas',
+            'delete_areas',
+
+            // Stages
+            'view_stages',
+            'create_stages',
+            'edit_stages',
+            'delete_stages',
         ];
 
         foreach ($permissions as $permission) {

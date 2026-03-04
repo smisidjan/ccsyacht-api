@@ -49,7 +49,8 @@ class RoleSeeder extends Seeder
             ],
 
             // Surveyor: Inspecteur. Kan gebruikers en shipyards bekijken,
-            // projecten bekijken/bewerken, project leden, document types en documenten beheren
+            // projecten bekijken/bewerken, project leden, document types, documenten,
+            // decks, areas en stages volledig beheren
             'surveyor' => [
                 'view_users',
                 'view_shipyards',
@@ -64,10 +65,23 @@ class RoleSeeder extends Seeder
                 'download_documents',
                 'upload_documents',
                 'delete_documents',
+                'view_decks',
+                'create_decks',
+                'edit_decks',
+                'delete_decks',
+                'view_areas',
+                'create_areas',
+                'edit_areas',
+                'delete_areas',
+                'view_stages',
+                'create_stages',
+                'edit_stages',
+                'delete_stages',
             ],
 
             // Painter: Schilder. Kan gebruikers en shipyards bekijken,
-            // projecten bekijken/bewerken, documenten bekijken, downloaden en uploaden
+            // projecten bekijken/bewerken, documenten bekijken/downloaden/uploaden,
+            // decks/areas/stages bekijken en bewerken
             'painter' => [
                 'view_users',
                 'view_shipyards',
@@ -77,18 +91,28 @@ class RoleSeeder extends Seeder
                 'view_documents',
                 'download_documents',
                 'upload_documents',
+                'view_decks',
+                'edit_decks',
+                'view_areas',
+                'edit_areas',
+                'view_stages',
+                'edit_stages',
             ],
 
             // =========================================================================
             // Guest Roles (voor bezoekers van andere organisaties)
             // =========================================================================
 
-            // Viewer: Read-only toegang. Kan shipyards, projecten, document types en documenten bekijken
+            // Viewer: Read-only toegang. Kan shipyards, projecten, document types,
+            // documenten, decks, areas en stages bekijken
             'viewer' => [
                 'view_shipyards',
                 'view_projects',
                 'view_document_types',
                 'view_documents',
+                'view_decks',
+                'view_areas',
+                'view_stages',
             ],
 
             // Owner Representative: Vertegenwoordiger van de eigenaar.
@@ -98,6 +122,9 @@ class RoleSeeder extends Seeder
                 'view_projects',
                 'view_document_types',
                 'view_documents',
+                'view_decks',
+                'view_areas',
+                'view_stages',
             ],
         ];
 

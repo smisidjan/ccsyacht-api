@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * Project model representing a yacht painting project (CreativeWork).
@@ -77,6 +76,14 @@ class Project extends Model
     public function documentTypes(): HasMany
     {
         return $this->hasMany(DocumentType::class);
+    }
+
+    /**
+     * Decks for this project.
+     */
+    public function decks(): HasMany
+    {
+        return $this->hasMany(Deck::class)->orderBy('sort_order');
     }
 
     // =========================================================================

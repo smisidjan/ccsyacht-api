@@ -5,8 +5,11 @@ declare(strict_types=1);
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\GuestRolePermissionController;
 use App\Http\Controllers\Api\InvitationController;
+use App\Http\Controllers\Api\Project\AreaController;
+use App\Http\Controllers\Api\Project\DeckController;
 use App\Http\Controllers\Api\Project\DocumentController;
 use App\Http\Controllers\Api\Project\DocumentTypeController;
+use App\Http\Controllers\Api\Project\StageController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\RegistrationRequestController;
 use App\Http\Controllers\Api\ShipyardController;
@@ -133,6 +136,7 @@ Route::prefix('api')->middleware('tenant')->group(function () {
         Route::middleware('permission:view_projects')->group(function () {
             Route::get('/projects', [ProjectController::class, 'index']);
             Route::get('/projects/{id}', [ProjectController::class, 'show']);
+            Route::get('/projects/{id}/general-arrangement', [ProjectController::class, 'downloadGeneralArrangement']);
         });
 
         Route::middleware('permission:create_projects')->group(function () {
@@ -191,6 +195,73 @@ Route::prefix('api')->middleware('tenant')->group(function () {
 
         Route::middleware('permission:delete_documents')->group(function () {
             Route::delete('/projects/{projectId}/documents/{docId}', [DocumentController::class, 'destroy']);
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Project Decks
+        |--------------------------------------------------------------------------
+        */
+        Route::middleware('permission:view_decks')->group(function () {
+            Route::get('/projects/{projectId}/decks', [DeckController::class, 'index']);
+            Route::get('/projects/{projectId}/decks/{deckId}', [DeckController::class, 'show']);
+        });
+
+        Route::middleware('permission:create_decks')->group(function () {
+            Route::post('/projects/{projectId}/decks', [DeckController::class, 'store']);
+        });
+
+        Route::middleware('permission:edit_decks')->group(function () {
+            Route::put('/projects/{projectId}/decks/{deckId}', [DeckController::class, 'update']);
+        });
+
+        Route::middleware('permission:delete_decks')->group(function () {
+            Route::delete('/projects/{projectId}/decks/{deckId}', [DeckController::class, 'destroy']);
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Project Areas
+        |--------------------------------------------------------------------------
+        */
+        Route::middleware('permission:view_areas')->group(function () {
+            Route::get('/projects/{projectId}/areas', [AreaController::class, 'index']);
+            Route::get('/projects/{projectId}/areas/{areaId}', [AreaController::class, 'show']);
+        });
+
+        Route::middleware('permission:create_areas')->group(function () {
+            Route::post('/projects/{projectId}/decks/{deckId}/areas', [AreaController::class, 'store']);
+        });
+
+        Route::middleware('permission:edit_areas')->group(function () {
+            Route::put('/projects/{projectId}/areas/{areaId}', [AreaController::class, 'update']);
+        });
+
+        Route::middleware('permission:delete_areas')->group(function () {
+            Route::delete('/projects/{projectId}/areas/{areaId}', [AreaController::class, 'destroy']);
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Project Stages
+        |--------------------------------------------------------------------------
+        */
+        Route::middleware('permission:view_stages')->group(function () {
+            Route::get('/projects/{projectId}/areas/{areaId}/stages', [StageController::class, 'index']);
+            Route::get('/projects/{projectId}/stages/{stageId}', [StageController::class, 'show']);
+        });
+
+        Route::middleware('permission:create_stages')->group(function () {
+            Route::post('/projects/{projectId}/areas/{areaId}/stages', [StageController::class, 'store']);
+        });
+
+        Route::middleware('permission:edit_stages')->group(function () {
+            Route::put('/projects/{projectId}/stages/{stageId}', [StageController::class, 'update']);
+            Route::put('/projects/{projectId}/stages/{stageId}/status', [StageController::class, 'updateStatus']);
+        });
+
+        Route::middleware('permission:delete_stages')->group(function () {
+            Route::delete('/projects/{projectId}/stages/{stageId}', [StageController::class, 'destroy']);
         });
 
         /*
