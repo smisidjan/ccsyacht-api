@@ -95,17 +95,3 @@ Route::prefix('system')->group(function () {
     });
 });
 
-/*
-|--------------------------------------------------------------------------
-| Fallback Route
-|--------------------------------------------------------------------------
-*/
-
-Route::fallback(function () {
-    return response()->json([
-        '@context' => 'https://schema.org',
-        '@type' => 'Action',
-        'actionStatus' => 'FailedActionStatus',
-        'error' => 'Endpoint not found.',
-    ], 404);
-});
