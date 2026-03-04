@@ -9,6 +9,9 @@ use App\Http\Controllers\Api\Project\AreaController;
 use App\Http\Controllers\Api\Project\DeckController;
 use App\Http\Controllers\Api\Project\DocumentController;
 use App\Http\Controllers\Api\Project\DocumentTypeController;
+use App\Http\Controllers\Api\Project\LogbookController;
+use App\Http\Controllers\Api\Project\MemberController;
+use App\Http\Controllers\Api\Project\SignerController;
 use App\Http\Controllers\Api\Project\StageController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\RegistrationRequestController;
@@ -262,6 +265,37 @@ Route::prefix('api')->middleware('tenant')->group(function () {
 
         Route::middleware('permission:delete_stages')->group(function () {
             Route::delete('/projects/{projectId}/stages/{stageId}', [StageController::class, 'destroy']);
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Project Members
+        |--------------------------------------------------------------------------
+        */
+        Route::middleware('permission:manage_project_members')->group(function () {
+            Route::get('/projects/{projectId}/members', [MemberController::class, 'index']);
+            Route::post('/projects/{projectId}/members', [MemberController::class, 'store']);
+            Route::delete('/projects/{projectId}/members/{userId}', [MemberController::class, 'destroy']);
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Project Signers
+        |--------------------------------------------------------------------------
+        */
+        Route::middleware('permission:manage_project_signers')->group(function () {
+            Route::get('/projects/{projectId}/signers', [SignerController::class, 'index']);
+            Route::post('/projects/{projectId}/signers', [SignerController::class, 'store']);
+            Route::delete('/projects/{projectId}/signers/{userId}', [SignerController::class, 'destroy']);
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Project Logbook
+        |--------------------------------------------------------------------------
+        */
+        Route::middleware('permission:view_logbook')->group(function () {
+            Route::get('/projects/{projectId}/logbook', [LogbookController::class, 'index']);
         });
 
         /*
