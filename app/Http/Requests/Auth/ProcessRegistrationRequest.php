@@ -19,7 +19,7 @@ class ProcessRegistrationRequest extends FormRequest
             'role' => [
                 'required_if:action,approve',
                 'string',
-                Rule::in(['admin', 'main user', 'invitation manager', 'user', 'yard', 'surveyor', 'painter', 'owner representative']),
+                Rule::in(['admin', 'main user', 'invitation manager', 'user', 'surveyor', 'painter', 'owner representative']),
             ],
             'rejection_reason' => ['nullable', 'string', 'max:500'],
         ];
