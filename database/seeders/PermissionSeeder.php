@@ -39,7 +39,9 @@ class PermissionSeeder extends Seeder
             'create_projects',
             'edit_projects',
             'delete_projects',
+            'view_project_members',
             'manage_project_members',
+            'view_project_signers',
             'manage_project_signers',
 
             // Document Types
