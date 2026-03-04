@@ -10,12 +10,14 @@ use App\Models\LogbookEntry;
 use App\Models\Project;
 use App\Models\ProjectMember;
 use App\Models\User;
+use App\Traits\BroadcastsProjectChanges;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class MemberController extends Controller
 {
+    use BroadcastsProjectChanges;
     public function index(string $projectId): AnonymousResourceCollection
     {
         $project = Project::findOrFail($projectId);
@@ -54,12 +56,20 @@ class MemberController extends Controller
             ['user_id' => $validated['user_id'], 'user_name' => $user->name]
         );
 
+        // Broadcast the change
+        $this->broadcastChange($project, 'member', 'created', $member);
+
         return $this->resourceResponse(new MemberResource($member), 201);
     }
 
     public function destroy(string $projectId, string $userId, Request $request): JsonResponse
     {
         $project = Project::findOrFail($projectId);
+
+        // Prevent users from removing themselves
+        if ($request->user()->id === $userId) {
+            return $this->errorResponse('You cannot remove yourself from the project.', 403);
+        }
 
         $member = $project->members()->where('user_id', $userId)->first();
 
@@ -68,6 +78,7 @@ class MemberController extends Controller
         }
 
         $user = $member->user;
+        $memberId = $member->id;
         $member->delete();
 
         // Log the action
@@ -78,6 +89,9 @@ class MemberController extends Controller
             $request->user(),
             ['user_id' => $userId, 'user_name' => $user->name]
         );
+
+        // Broadcast the change
+        $this->broadcastChange($project, 'member', 'deleted', null, ['id' => $memberId, 'user_id' => $userId]);
 
         return $this->successResponse('DeleteAction', 'Member removed successfully.');
     }
