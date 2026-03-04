@@ -16,6 +16,9 @@ class RoleSeeder extends Seeder
         // Get all permissions for admin
         $allPermissions = Permission::pluck('name')->toArray();
 
+        // Get all view permissions
+        $viewPermissions = array_values(array_filter($allPermissions, fn($p) => str_starts_with($p, 'view_')));
+
         $rolePermissions = [
             // =========================================================================
             // Employee Roles (voor eigen medewerkers van de organisatie)
@@ -41,97 +44,50 @@ class RoleSeeder extends Seeder
                 'process_registrations',
             ],
 
-            // User: Standaard medewerker. Kan gebruikers, shipyards, projecten en logbook bekijken
-            'user' => [
-                'view_users',
-                'view_shipyards',
-                'view_projects',
-                'view_logbook',
-            ],
+            // User: Standaard medewerker. Kan alles bekijken (alle view permissions)
+            'user' => $viewPermissions,
 
-            // Surveyor: Inspecteur. Kan gebruikers en shipyards bekijken,
-            // projecten bekijken/bewerken, project leden/signers, document types, documenten,
-            // decks, areas, stages en logbook volledig beheren
-            'surveyor' => [
-                'view_users',
-                'view_shipyards',
-                'view_projects',
+            // Surveyor: Inspecteur. Alle view permissions + volledige CRUD op project gerelateerde entities
+            'surveyor' => array_merge($viewPermissions, [
                 'edit_projects',
                 'manage_project_members',
                 'manage_project_signers',
-                'view_document_types',
                 'create_document_types',
                 'edit_document_types',
                 'delete_document_types',
-                'view_documents',
                 'download_documents',
                 'upload_documents',
                 'delete_documents',
-                'view_decks',
                 'create_decks',
                 'edit_decks',
                 'delete_decks',
-                'view_areas',
                 'create_areas',
                 'edit_areas',
                 'delete_areas',
-                'view_stages',
                 'create_stages',
                 'edit_stages',
                 'delete_stages',
-                'view_logbook',
-            ],
+            ]),
 
-            // Painter: Schilder. Kan gebruikers en shipyards bekijken,
-            // projecten bekijken/bewerken, documenten bekijken/downloaden/uploaden,
-            // decks/areas/stages bekijken en bewerken, logbook bekijken
-            'painter' => [
-                'view_users',
-                'view_shipyards',
-                'view_projects',
+            // Painter: Schilder. Alle view permissions + edit/upload rechten
+            'painter' => array_merge($viewPermissions, [
                 'edit_projects',
-                'view_document_types',
-                'view_documents',
                 'download_documents',
                 'upload_documents',
-                'view_decks',
                 'edit_decks',
-                'view_areas',
                 'edit_areas',
-                'view_stages',
                 'edit_stages',
-                'view_logbook',
-            ],
+            ]),
 
             // =========================================================================
             // Guest Roles (voor bezoekers van andere organisaties)
             // =========================================================================
 
-            // Viewer: Read-only toegang. Kan shipyards, projecten, document types,
-            // documenten, decks, areas, stages en logbook bekijken
-            'viewer' => [
-                'view_shipyards',
-                'view_projects',
-                'view_document_types',
-                'view_documents',
-                'view_decks',
-                'view_areas',
-                'view_stages',
-                'view_logbook',
-            ],
+            // Viewer: Read-only toegang. Alle view permissions behalve view_users
+            'viewer' => array_values(array_diff($viewPermissions, ['view_users'])),
 
-            // Owner Representative: Vertegenwoordiger van de eigenaar.
-            // Zelfde rechten als viewer (read-only)
-            'owner representative' => [
-                'view_shipyards',
-                'view_projects',
-                'view_document_types',
-                'view_documents',
-                'view_decks',
-                'view_areas',
-                'view_stages',
-                'view_logbook',
-            ],
+            // Owner Representative: Zelfde rechten als viewer (read-only)
+            'owner representative' => array_values(array_diff($viewPermissions, ['view_users'])),
         ];
 
         foreach ($rolePermissions as $roleName => $permissions) {
