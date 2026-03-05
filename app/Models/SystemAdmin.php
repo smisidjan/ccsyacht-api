@@ -34,4 +34,19 @@ class SystemAdmin extends Authenticatable
             'active' => 'boolean',
         ];
     }
+
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function (SystemAdmin $admin) {
+            $admin->email = strtolower($admin->email);
+        });
+
+        static::updating(function (SystemAdmin $admin) {
+            if ($admin->isDirty('email')) {
+                $admin->email = strtolower($admin->email);
+            }
+        });
+    }
 }
