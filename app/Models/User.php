@@ -59,11 +59,18 @@ class User extends Authenticatable
         parent::boot();
 
         static::creating(function (User $user) {
+            $user->email = strtolower($user->email);
             if (empty($user->role_name)) {
                 $user->role_name = 'user';
             }
             if (empty($user->employment_type)) {
                 $user->employment_type = 'employee';
+            }
+        });
+
+        static::updating(function (User $user) {
+            if ($user->isDirty('email')) {
+                $user->email = strtolower($user->email);
             }
         });
     }

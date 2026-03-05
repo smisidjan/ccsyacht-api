@@ -34,6 +34,15 @@ class RegistrationRequest extends Model
         ];
     }
 
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function (RegistrationRequest $request) {
+            $request->email = strtolower($request->email);
+        });
+    }
+
     public function processedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'processed_by');
