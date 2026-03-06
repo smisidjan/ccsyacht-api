@@ -39,7 +39,7 @@ class RegistrationRequest extends Model
         parent::boot();
 
         static::creating(function (RegistrationRequest $request) {
-            $request->email = strtolower($request->email);
+            $request->email = strtolower(trim($request->email));
         });
     }
 

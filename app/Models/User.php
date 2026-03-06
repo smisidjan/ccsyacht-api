@@ -59,7 +59,7 @@ class User extends Authenticatable
         parent::boot();
 
         static::creating(function (User $user) {
-            $user->email = strtolower($user->email);
+            $user->email = strtolower(trim($user->email));
             if (empty($user->role_name)) {
                 $user->role_name = 'user';
             }
@@ -70,7 +70,7 @@ class User extends Authenticatable
 
         static::updating(function (User $user) {
             if ($user->isDirty('email')) {
-                $user->email = strtolower($user->email);
+                $user->email = strtolower(trim($user->email));
             }
         });
     }

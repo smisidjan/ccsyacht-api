@@ -15,7 +15,7 @@ class LoginRequest extends FormRequest
     {
         if ($this->has('email')) {
             $this->merge([
-                'email' => strtolower($this->input('email')),
+                'email' => strtolower(trim($this->input('email'))),
             ]);
         }
     }
