@@ -40,12 +40,12 @@ class SystemAdmin extends Authenticatable
         parent::boot();
 
         static::creating(function (SystemAdmin $admin) {
-            $admin->email = strtolower($admin->email);
+            $admin->email = strtolower(trim($admin->email));
         });
 
         static::updating(function (SystemAdmin $admin) {
             if ($admin->isDirty('email')) {
-                $admin->email = strtolower($admin->email);
+                $admin->email = strtolower(trim($admin->email));
             }
         });
     }

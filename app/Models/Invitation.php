@@ -53,7 +53,7 @@ class Invitation extends Model
         parent::boot();
 
         static::creating(function (Invitation $invitation) {
-            $invitation->email = strtolower($invitation->email);
+            $invitation->email = strtolower(trim($invitation->email));
             if (empty($invitation->token)) {
                 // Token format: tenant_slug:random_string
                 $tenantSlug = tenant()?->slug ?? 'unknown';
