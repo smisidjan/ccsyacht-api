@@ -21,6 +21,8 @@ class AreaController extends Controller
     {
         $project = Project::findOrFail($projectId);
 
+        $this->authorize('view', $project);
+
         $query = Area::query()
             ->with('deck')
             ->withCount('stages')
@@ -39,6 +41,9 @@ class AreaController extends Controller
     public function store(string $projectId, string $deckId, Request $request): JsonResponse
     {
         $project = Project::findOrFail($projectId);
+
+        $this->authorize('view', $project);
+
         $deck = $project->decks()->findOrFail($deckId);
 
         $validated = $request->validate([
@@ -75,6 +80,8 @@ class AreaController extends Controller
     {
         $project = Project::findOrFail($projectId);
 
+        $this->authorize('view', $project);
+
         $area = Area::with(['deck', 'stages' => fn($q) => $q->ordered()])
             ->withCount('stages')
             ->whereHas('deck', fn($q) => $q->where('project_id', $project->id))
@@ -86,6 +93,8 @@ class AreaController extends Controller
     public function update(string $projectId, string $areaId, Request $request): JsonResponse
     {
         $project = Project::findOrFail($projectId);
+
+        $this->authorize('view', $project);
 
         $area = Area::whereHas('deck', fn($q) => $q->where('project_id', $project->id))
             ->findOrFail($areaId);
@@ -118,6 +127,8 @@ class AreaController extends Controller
     public function destroy(string $projectId, string $areaId, Request $request): JsonResponse
     {
         $project = Project::findOrFail($projectId);
+
+        $this->authorize('view', $project);
 
         $area = Area::with('deck')->whereHas('deck', fn($q) => $q->where('project_id', $project->id))
             ->findOrFail($areaId);

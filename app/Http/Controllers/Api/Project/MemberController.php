@@ -22,6 +22,8 @@ class MemberController extends Controller
     {
         $project = Project::findOrFail($projectId);
 
+        $this->authorize('view', $project);
+
         $members = $project->members()
             ->with('user')
             ->orderBy('created_at')
@@ -33,6 +35,8 @@ class MemberController extends Controller
     public function store(string $projectId, Request $request): JsonResponse
     {
         $project = Project::findOrFail($projectId);
+
+        $this->authorize('view', $project);
 
         $validated = $request->validate([
             'user_id' => ['required', 'uuid', 'exists:users,id'],
@@ -65,6 +69,8 @@ class MemberController extends Controller
     public function destroy(string $projectId, string $userId, Request $request): JsonResponse
     {
         $project = Project::findOrFail($projectId);
+
+        $this->authorize('view', $project);
 
         // Prevent users from removing themselves
         if ($request->user()->id === $userId) {

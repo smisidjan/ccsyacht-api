@@ -21,6 +21,8 @@ class SignerController extends Controller
     {
         $project = Project::findOrFail($projectId);
 
+        $this->authorize('view', $project);
+
         $signers = $project->signers()
             ->with('user')
             ->orderBy('created_at')
@@ -32,6 +34,8 @@ class SignerController extends Controller
     public function store(string $projectId, Request $request): JsonResponse
     {
         $project = Project::findOrFail($projectId);
+
+        $this->authorize('view', $project);
 
         $validated = $request->validate([
             'user_id' => ['required', 'uuid', 'exists:users,id'],
@@ -69,6 +73,8 @@ class SignerController extends Controller
     public function destroy(string $projectId, string $userId, Request $request): JsonResponse
     {
         $project = Project::findOrFail($projectId);
+
+        $this->authorize('view', $project);
 
         $signer = $project->signers()->where('user_id', $userId)->first();
 

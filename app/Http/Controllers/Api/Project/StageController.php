@@ -23,6 +23,8 @@ class StageController extends Controller
     {
         $project = Project::findOrFail($projectId);
 
+        $this->authorize('view', $project);
+
         $area = Area::whereHas('deck', fn($q) => $q->where('project_id', $project->id))
             ->findOrFail($areaId);
 
@@ -37,6 +39,8 @@ class StageController extends Controller
     public function store(string $projectId, string $areaId, Request $request): JsonResponse
     {
         $project = Project::findOrFail($projectId);
+
+        $this->authorize('view', $project);
 
         $area = Area::whereHas('deck', fn($q) => $q->where('project_id', $project->id))
             ->findOrFail($areaId);
@@ -81,6 +85,8 @@ class StageController extends Controller
     {
         $project = Project::findOrFail($projectId);
 
+        $this->authorize('view', $project);
+
         $stage = Stage::with('area.deck')
             ->whereHas('area.deck', fn($q) => $q->where('project_id', $project->id))
             ->findOrFail($stageId);
@@ -91,6 +97,8 @@ class StageController extends Controller
     public function update(string $projectId, string $stageId, Request $request): JsonResponse
     {
         $project = Project::findOrFail($projectId);
+
+        $this->authorize('view', $project);
 
         $stage = Stage::whereHas('area.deck', fn($q) => $q->where('project_id', $project->id))
             ->findOrFail($stageId);
@@ -125,6 +133,8 @@ class StageController extends Controller
     {
         $project = Project::findOrFail($projectId);
 
+        $this->authorize('view', $project);
+
         $stage = Stage::with('area')->whereHas('area.deck', fn($q) => $q->where('project_id', $project->id))
             ->findOrFail($stageId);
 
@@ -154,6 +164,8 @@ class StageController extends Controller
     public function destroy(string $projectId, string $stageId, Request $request): JsonResponse
     {
         $project = Project::findOrFail($projectId);
+
+        $this->authorize('view', $project);
 
         $stage = Stage::with('area')->whereHas('area.deck', fn($q) => $q->where('project_id', $project->id))
             ->findOrFail($stageId);

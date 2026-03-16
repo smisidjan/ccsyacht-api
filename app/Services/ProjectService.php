@@ -13,12 +13,14 @@ class ProjectService
     private const MASTER_TENANT_SLUG = 'ccs-yacht';
 
     public function list(
+        User $user,
         ?string $status = null,
         ?string $projectType = null,
         ?string $search = null,
         int $perPage = 15
     ): LengthAwarePaginator {
         return Project::query()
+            ->forUser($user)
             ->with(['shipyard', 'creator'])
             ->when($status, fn($q, $status) => $q->where('status', $status))
             ->when($projectType, fn($q, $type) => $q->where('project_type', $type))

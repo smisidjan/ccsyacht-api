@@ -21,6 +21,7 @@ class ProjectController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $projects = $this->projectService->list(
+            $request->user(),
             $request->status,
             $request->project_type,
             $request->search,
@@ -33,7 +34,7 @@ class ProjectController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', 'unique:projects,name'],
             'description' => ['nullable', 'string', 'max:5000'],
             'project_type' => ['required', 'string', 'in:new_built,refit'],
             'shipyard_id' => ['nullable', 'uuid', 'exists:shipyards,id'],
@@ -55,12 +56,16 @@ class ProjectController extends Controller
     {
         $project = Project::with(['shipyard', 'creator'])->findOrFail($id);
 
+        $this->authorize('view', $project);
+
         return $this->resourceResponse(new ProjectResource($project));
     }
 
     public function update(string $id, Request $request): JsonResponse
     {
         $project = Project::findOrFail($id);
+
+        $this->authorize('update', $project);
 
         $validated = $request->validate([
             'name' => ['sometimes', 'string', 'max:255'],
@@ -81,6 +86,8 @@ class ProjectController extends Controller
     {
         $project = Project::findOrFail($id);
 
+        $this->authorize('delete', $project);
+
         $this->projectService->delete($project);
 
         return $this->successResponse('DeleteAction', 'Project deleted successfully.');
@@ -89,6 +96,8 @@ class ProjectController extends Controller
     public function uploadGeneralArrangement(string $id, Request $request): JsonResponse
     {
         $project = Project::findOrFail($id);
+
+        $this->authorize('update', $project);
 
         $request->validate([
             'file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:20480'],
@@ -110,6 +119,8 @@ class ProjectController extends Controller
     public function downloadGeneralArrangement(string $id): mixed
     {
         $project = Project::findOrFail($id);
+
+        $this->authorize('view', $project);
 
         if (!$project->general_arrangement_path) {
             return $this->errorResponse('No general arrangement file uploaded.', 404);

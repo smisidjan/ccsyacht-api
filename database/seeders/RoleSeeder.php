@@ -83,19 +83,17 @@ class RoleSeeder extends Seeder
             // Guest Roles (voor bezoekers van andere organisaties)
             // =========================================================================
 
-            // Viewer: Read-only toegang. Alle view permissions behalve view_users
-            'viewer' => array_values(array_diff($viewPermissions, ['view_users'])),
+            // Viewer: Read-only toegang. Alle view permissions behalve view_users en view_shipyards
+            'viewer' => array_values(array_diff($viewPermissions, ['view_users', 'view_shipyards'])),
 
             // Owner Representative: Zelfde rechten als viewer (read-only)
-            'owner representative' => array_values(array_diff($viewPermissions, ['view_users'])),
+            'owner representative' => array_values(array_diff($viewPermissions, ['view_users', 'view_shipyards'])),
         ];
 
         foreach ($rolePermissions as $roleName => $permissions) {
             $role = Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
             $role->syncPermissions($permissions);
         }
-
-        // Remove deprecated yard role if exists
-        Role::where('name', 'yard')->delete();
+        
     }
 }

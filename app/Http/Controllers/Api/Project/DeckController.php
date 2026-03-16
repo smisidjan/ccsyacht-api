@@ -20,6 +20,8 @@ class DeckController extends Controller
     {
         $project = Project::findOrFail($projectId);
 
+        $this->authorize('view', $project);
+
         $decks = $project->decks()
             ->withCount(['areas', 'stages'])
             ->ordered()
@@ -31,6 +33,8 @@ class DeckController extends Controller
     public function store(string $projectId, Request $request): JsonResponse
     {
         $project = Project::findOrFail($projectId);
+
+        $this->authorize('view', $project);
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -65,6 +69,8 @@ class DeckController extends Controller
     {
         $project = Project::findOrFail($projectId);
 
+        $this->authorize('view', $project);
+
         $deck = $project->decks()
             ->withCount(['areas', 'stages'])
             ->with(['areas' => fn($q) => $q->withCount('stages')->ordered()])
@@ -76,6 +82,9 @@ class DeckController extends Controller
     public function update(string $projectId, string $deckId, Request $request): JsonResponse
     {
         $project = Project::findOrFail($projectId);
+
+        $this->authorize('view', $project);
+
         $deck = $project->decks()->findOrFail($deckId);
 
         $validated = $request->validate([
@@ -105,6 +114,9 @@ class DeckController extends Controller
     public function destroy(string $projectId, string $deckId, Request $request): JsonResponse
     {
         $project = Project::findOrFail($projectId);
+
+        $this->authorize('view', $project);
+
         $deck = $project->decks()->findOrFail($deckId);
 
         $deckName = $deck->name;

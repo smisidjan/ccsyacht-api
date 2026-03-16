@@ -20,6 +20,8 @@ class DocumentController extends Controller
     {
         $project = Project::findOrFail($projectId);
 
+        $this->authorize('view', $project);
+
         $query = Document::query()
             ->with(['uploader', 'documentType'])
             ->whereHas('documentType', function ($q) use ($project) {
@@ -40,6 +42,9 @@ class DocumentController extends Controller
     public function indexByType(string $projectId, string $typeId): AnonymousResourceCollection
     {
         $project = Project::findOrFail($projectId);
+
+        $this->authorize('view', $project);
+
         $documentType = $project->documentTypes()->findOrFail($typeId);
 
         $documents = $documentType->documents()
@@ -53,6 +58,9 @@ class DocumentController extends Controller
     public function store(string $projectId, string $typeId, Request $request): JsonResponse
     {
         $project = Project::findOrFail($projectId);
+
+        $this->authorize('view', $project);
+
         $documentType = $project->documentTypes()->findOrFail($typeId);
 
         $validated = $request->validate([
@@ -95,6 +103,8 @@ class DocumentController extends Controller
     {
         $project = Project::findOrFail($projectId);
 
+        $this->authorize('view', $project);
+
         $document = Document::with(['uploader', 'documentType'])
             ->whereHas('documentType', function ($q) use ($project) {
                 $q->where('project_id', $project->id);
@@ -107,6 +117,8 @@ class DocumentController extends Controller
     public function destroy(string $projectId, string $docId, Request $request): JsonResponse
     {
         $project = Project::findOrFail($projectId);
+
+        $this->authorize('view', $project);
 
         $document = Document::with('documentType')->whereHas('documentType', function ($q) use ($project) {
             $q->where('project_id', $project->id);
@@ -139,6 +151,8 @@ class DocumentController extends Controller
     public function download(string $projectId, string $docId): mixed
     {
         $project = Project::findOrFail($projectId);
+
+        $this->authorize('view', $project);
 
         $document = Document::whereHas('documentType', function ($q) use ($project) {
             $q->where('project_id', $project->id);

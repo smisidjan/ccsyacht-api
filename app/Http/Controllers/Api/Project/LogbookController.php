@@ -16,6 +16,8 @@ class LogbookController extends Controller
     {
         $project = Project::findOrFail($projectId);
 
+        $this->authorize('view', $project);
+
         $query = $project->logbookEntries()
             ->with('user');
 

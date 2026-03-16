@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -166,6 +167,22 @@ class Project extends Model
     public function scopeRefit($query)
     {
         return $query->where('project_type', 'refit');
+    }
+
+    /**
+     * Scope to filter projects based on user's employment type.
+     * Guests only see projects where they are a member.
+     * Employees see all projects.
+     */
+    public function scopeForUser(Builder $query, User $user): Builder
+    {
+        if ($user->employment_type !== 'guest') {
+            return $query;
+        }
+
+        return $query->whereHas('members', function (Builder $q) use ($user) {
+            $q->where('user_id', $user->id);
+        });
     }
 
     // =========================================================================

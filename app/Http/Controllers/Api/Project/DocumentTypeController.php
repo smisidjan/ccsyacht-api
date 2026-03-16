@@ -16,6 +16,8 @@ class DocumentTypeController extends Controller
     {
         $project = Project::findOrFail($projectId);
 
+        $this->authorize('view', $project);
+
         $documentTypes = $project->documentTypes()
             ->withCount('documents')
             ->ordered()
@@ -27,6 +29,8 @@ class DocumentTypeController extends Controller
     public function store(string $projectId, Request $request): JsonResponse
     {
         $project = Project::findOrFail($projectId);
+
+        $this->authorize('view', $project);
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -48,6 +52,9 @@ class DocumentTypeController extends Controller
     public function show(string $projectId, string $typeId): JsonResponse
     {
         $project = Project::findOrFail($projectId);
+
+        $this->authorize('view', $project);
+
         $documentType = $project->documentTypes()->withCount('documents')->findOrFail($typeId);
 
         return $this->resourceResponse(new DocumentTypeResource($documentType));
@@ -56,6 +63,9 @@ class DocumentTypeController extends Controller
     public function update(string $projectId, string $typeId, Request $request): JsonResponse
     {
         $project = Project::findOrFail($projectId);
+
+        $this->authorize('view', $project);
+
         $documentType = $project->documentTypes()->findOrFail($typeId);
 
         $validated = $request->validate([
@@ -74,6 +84,9 @@ class DocumentTypeController extends Controller
     public function destroy(string $projectId, string $typeId): JsonResponse
     {
         $project = Project::findOrFail($projectId);
+
+        $this->authorize('view', $project);
+
         $documentType = $project->documentTypes()->findOrFail($typeId);
 
         // Check if type has documents
