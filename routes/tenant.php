@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\Project\SignerController;
 use App\Http\Controllers\Api\Project\StageController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\RegistrationRequestController;
+use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\ShipyardController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Broadcast;
@@ -84,6 +85,13 @@ Route::prefix('api')->middleware('tenant')->group(function () {
         Route::middleware('permission:delete_users')->group(function () {
             Route::delete('/users/{id}', [UserController::class, 'destroy']);
         });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Roles
+        |--------------------------------------------------------------------------
+        */
+        Route::get('/roles', [RoleController::class, 'index']);
 
         /*
         |--------------------------------------------------------------------------
