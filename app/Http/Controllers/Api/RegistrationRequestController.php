@@ -56,7 +56,10 @@ class RegistrationRequestController extends Controller
             $this->registrationRequestService->approve(
                 $registrationRequest,
                 $request->user(),
-                $request->role
+                $request->role,
+                $request->employment_type,
+                $request->home_organization_id,
+                $request->home_organization_name
             );
 
             return $this->successWithResult(

@@ -32,19 +32,35 @@ class RegistrationRequestService
             'status' => 'pending',
         ]);
 
-        $admins = User::role(['admin', 'main user', 'invitation manager'])->get();
+        $admins = User::permission('process_registrations')->get();
         Notification::send($admins, new RegistrationRequestSubmittedNotification($registrationRequest));
 
         return $registrationRequest;
     }
 
-    public function approve(RegistrationRequest $registrationRequest, User $processedBy, string $role): User
-    {
-        $user = DB::transaction(function () use ($registrationRequest, $processedBy, $role) {
+    public function approve(
+        RegistrationRequest $registrationRequest,
+        User $processedBy,
+        string $role,
+        string $employmentType = 'employee',
+        ?string $homeOrganizationId = null,
+        ?string $homeOrganizationName = null
+    ): User {
+        $user = DB::transaction(function () use (
+            $registrationRequest,
+            $processedBy,
+            $role,
+            $employmentType,
+            $homeOrganizationId,
+            $homeOrganizationName
+        ) {
             $user = new User([
                 'name' => $registrationRequest->name,
                 'email' => $registrationRequest->email,
                 'email_verified_at' => now(),
+                'employment_type' => $employmentType,
+                'home_organization_id' => $homeOrganizationId,
+                'home_organization_name' => $homeOrganizationName,
             ]);
             $user->password = $registrationRequest->password;
             $user->save();
