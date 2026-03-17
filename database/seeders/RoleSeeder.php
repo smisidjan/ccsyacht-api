@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Tenant;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -13,27 +14,30 @@ class RoleSeeder extends Seeder
         // Ensure permissions exist first
         $this->call(PermissionSeeder::class);
 
-        // Get all permissions for admin
+        // Get all permissions
         $allPermissions = Permission::pluck('name')->toArray();
 
-        // Get all view permissions
-        $viewPermissions = array_values(array_filter($allPermissions, fn($p) => str_starts_with($p, 'view_')));
+        // Filter out restricted permissions for this tenant
+        $allowedPermissions = $this->getAllowedPermissions($allPermissions);
+
+        // Get all view permissions (filtered)
+        $viewPermissions = array_values(array_filter($allowedPermissions, fn($p) => str_starts_with($p, 'view_')));
 
         $roles = [
             // =========================================================================
             // Employee Roles (voor eigen medewerkers van de organisatie)
             // =========================================================================
 
-            // Admin: Volledige toegang tot alle features inclusief organisatie instellingen
+            // Admin: Volledige toegang tot alle allowed features
             'admin' => [
                 'type' => 'employee',
-                'permissions' => $allPermissions,
+                'permissions' => $allowedPermissions,
             ],
 
             // Main User: Alles behalve organisatie instellingen en guest role configuratie
             'main user' => [
                 'type' => 'employee',
-                'permissions' => array_values(array_diff($allPermissions, [
+                'permissions' => array_values(array_diff($allowedPermissions, [
                     'manage_guest_roles',
                     'manage_settings',
                 ])),
@@ -166,5 +170,33 @@ class RoleSeeder extends Seeder
                 $role->delete();
             }
         }
+    }
+
+    /**
+     * Get allowed permissions for the current tenant.
+     * Filters out any restricted permissions.
+     */
+    private function getAllowedPermissions(array $allPermissions): array
+    {
+        $tenant = tenant();
+
+        if (!$tenant) {
+            return $allPermissions;
+        }
+
+        // Get tenant from landlord database to access restricted_permissions
+        $landlordTenant = Tenant::find($tenant->id);
+
+        if (!$landlordTenant || $landlordTenant->isMainOrganization()) {
+            return $allPermissions;
+        }
+
+        $restrictedPermissions = $landlordTenant->restricted_permissions ?? [];
+
+        if (empty($restrictedPermissions)) {
+            return $allPermissions;
+        }
+
+        return array_values(array_diff($allPermissions, $restrictedPermissions));
     }
 }
