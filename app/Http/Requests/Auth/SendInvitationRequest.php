@@ -10,19 +10,13 @@ use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
+use Spatie\Permission\Models\Role;
 
 class SendInvitationRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $user = $this->user();
-
-        if (! $user) {
-            return false;
-        }
-
-        // Use Spatie's role check instead of role_name column
-        return $user->hasAnyRole(['admin', 'main user', 'invitation manager']);
+        return $this->user()?->can('create_invitations') ?? false;
     }
 
     protected function prepareForValidation(): void
@@ -163,17 +157,7 @@ class SendInvitationRequest extends FormRequest
      */
     protected function getAllowedRoles(): array
     {
-        return [
-            'admin',
-            'main user',
-            'invitation manager',
-            'user',
-            'yard',
-            'surveyor',
-            'painter',
-            'owner representative',
-            'viewer',
-        ];
+        return Role::pluck('name')->toArray();
     }
 
     public function messages(): array
