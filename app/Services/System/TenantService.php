@@ -38,6 +38,7 @@ class TenantService
                 'active' => true,
                 'admin_email' => $data['admin_email'],
                 'admin_name' => $data['admin_name'] ?? 'Admin',
+                'restricted_permissions' => $data['restricted_permissions'] ?? null,
             ]);
 
             // Create subscription if provided (not for main organization)
@@ -82,6 +83,16 @@ class TenantService
     public function update(Tenant $tenant, array $data): Tenant
     {
         $tenant->update($data);
+
+        return $tenant->fresh();
+    }
+
+    /**
+     * Update restricted permissions for a tenant.
+     */
+    public function updateRestrictedPermissions(Tenant $tenant, array $permissions): Tenant
+    {
+        $tenant->update(['restricted_permissions' => $permissions]);
 
         return $tenant->fresh();
     }

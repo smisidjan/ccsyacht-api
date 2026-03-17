@@ -17,6 +17,7 @@ class TenantResource extends BaseResource
             'name' => $this->name,
             'alternateName' => $this->slug,
             'isActive' => $this->active,
+            'restrictedPermissions' => $this->restricted_permissions,
             'dateCreated' => $this->formatDate($this->created_at),
             'dateModified' => $this->formatDate($this->updated_at),
         ];

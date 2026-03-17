@@ -21,6 +21,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             'name',
             'slug',
             'active',
+            'restricted_permissions',
             'created_at',
             'updated_at',
         ];
@@ -31,6 +32,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         return [
             'active' => 'boolean',
             'data' => 'array',
+            'restricted_permissions' => 'array',
         ];
     }
 
@@ -54,6 +56,57 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     public function isMainOrganization(): bool
     {
         return $this->slug === 'ccs-yacht';
+    }
+
+    // =========================================================================
+    // Permission Management
+    // =========================================================================
+
+    /**
+     * Get the list of restricted permissions for this tenant.
+     * Main organization has no restrictions.
+     */
+    public function getRestrictedPermissions(): array
+    {
+        if ($this->isMainOrganization()) {
+            return [];
+        }
+
+        return $this->restricted_permissions ?? [];
+    }
+
+    /**
+     * Check if a permission is allowed for this tenant.
+     * A permission is allowed if it's NOT in the restricted list.
+     */
+    public function hasPermissionAllowed(string $permission): bool
+    {
+        if ($this->isMainOrganization()) {
+            return true;
+        }
+
+        $restricted = $this->restricted_permissions ?? [];
+
+        return !in_array($permission, $restricted, true);
+    }
+
+    /**
+     * Filter a list of permissions to only those allowed for this tenant.
+     * Removes any permissions that are in the restricted list.
+     */
+    public function filterAllowedPermissions(array $permissions): array
+    {
+        if ($this->isMainOrganization()) {
+            return $permissions;
+        }
+
+        $restricted = $this->restricted_permissions ?? [];
+
+        if (empty($restricted)) {
+            return $permissions;
+        }
+
+        return array_values(array_diff($permissions, $restricted));
     }
 
     // =========================================================================

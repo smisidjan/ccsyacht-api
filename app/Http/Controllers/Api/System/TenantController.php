@@ -36,6 +36,8 @@ class TenantController extends Controller
             'slug' => ['nullable', 'string', 'max:255', 'unique:landlord.tenants,slug'],
             'admin_email' => ['required', 'email', 'max:255'],
             'admin_name' => ['nullable', 'string', 'max:255'],
+            'restricted_permissions' => ['nullable', 'array'],
+            'restricted_permissions.*' => ['string'],
         ];
 
         // Subscription is required for non-main organizations
@@ -71,6 +73,8 @@ class TenantController extends Controller
             'name' => ['sometimes', 'string', 'max:255'],
             'slug' => ['sometimes', 'string', 'max:255', 'unique:landlord.tenants,slug,' . $tenant->id],
             'active' => ['sometimes', 'boolean'],
+            'restricted_permissions' => ['sometimes', 'nullable', 'array'],
+            'restricted_permissions.*' => ['string'],
             // Subscription updates
             'subscription' => ['sometimes', 'array'],
             'subscription.max_projects' => ['sometimes', 'integer', 'min:1'],
