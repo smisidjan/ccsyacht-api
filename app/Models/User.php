@@ -191,9 +191,13 @@ class User extends Authenticatable
             'identifier' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
+            'active' => $this->active,
+            'emailVerified' => $this->email_verified_at !== null,
             'roles' => $this->getRoleNames(),
             'permissions' => $this->getEffectivePermissions(),
             'employmentType' => $this->employment_type,
+            'dateCreated' => $this->created_at?->toIso8601String(),
+            'dateModified' => $this->updated_at?->toIso8601String(),
         ];
 
         if ($this->named_position) {
