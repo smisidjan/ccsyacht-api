@@ -123,4 +123,25 @@ class TenantController extends Controller
             'name' => $tenant->name,
         ]);
     }
+
+    /**
+     * Get permissions that can be selected as restricted when creating/editing a tenant.
+     * Excludes always_restricted permissions (these are managed automatically).
+     */
+    public function selectablePermissions(): JsonResponse
+    {
+        $permissions = $this->tenantService->getSelectablePermissions();
+        $alwaysRestricted = $this->tenantService->getAlwaysRestrictedPermissions();
+
+        return $this->resourceResponse([
+            '@context' => 'https://schema.org',
+            '@type' => 'ItemList',
+            'itemListElement' => $permissions,
+            'numberOfItems' => count($permissions),
+            'metadata' => [
+                'alwaysRestricted' => $alwaysRestricted,
+                'description' => 'These permissions are automatically restricted for all non-master tenants.',
+            ],
+        ]);
+    }
 }

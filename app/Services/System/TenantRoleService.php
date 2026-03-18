@@ -90,19 +90,25 @@ class TenantRoleService
 
     /**
      * Get all available permissions for the current tenant.
-     * Filters based on tenant's allowed_permissions.
+     * Filters out:
+     * - always_restricted permissions (from config)
+     * - tenant's restricted_permissions
      */
     public function getAllPermissions(?Tenant $tenant = null): Collection
     {
-        $allPermissions = Permission::orderBy('name')->pluck('name');
+        $allPermissions = Permission::orderBy('name')->pluck('name')->toArray();
+
+        // Always filter out always_restricted permissions
+        $alwaysRestricted = config('permissions.always_restricted', []);
+        $filtered = array_values(array_diff($allPermissions, $alwaysRestricted));
 
         $tenant = $tenant ?? tenant();
 
         if (!$tenant) {
-            return $allPermissions;
+            return collect($filtered);
         }
 
-        return collect($tenant->filterAllowedPermissions($allPermissions->toArray()));
+        return collect($tenant->filterAllowedPermissions($filtered));
     }
 
     /**

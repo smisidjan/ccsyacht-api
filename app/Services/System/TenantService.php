@@ -32,13 +32,19 @@ class TenantService
                 $slug = $originalSlug . '-' . $counter++;
             }
 
+            // Merge always_restricted permissions with any provided restricted_permissions
+            $restrictedPermissions = $this->mergeRestrictedPermissions(
+                $data['restricted_permissions'] ?? [],
+                $slug
+            );
+
             $tenant = Tenant::create([
                 'name' => $data['name'],
                 'slug' => $slug,
                 'active' => true,
                 'admin_email' => $data['admin_email'],
                 'admin_name' => $data['admin_name'] ?? 'Admin',
-                'restricted_permissions' => $data['restricted_permissions'] ?? null,
+                'restricted_permissions' => $restrictedPermissions,
             ]);
 
             // Create subscription if provided (not for main organization)
@@ -107,5 +113,45 @@ class TenantService
         return Tenant::where('slug', $slug)
             ->where('active', true)
             ->first();
+    }
+
+    /**
+     * Get permissions that can be selected as restricted (excludes always_restricted).
+     * These are the permissions shown in the "Restricted Permissions" UI.
+     */
+    public function getSelectablePermissions(): array
+    {
+        $alwaysRestricted = config('permissions.always_restricted', []);
+        $allPermissions = config('permissions.all', []);
+
+        $selectable = array_values(array_diff($allPermissions, $alwaysRestricted));
+        sort($selectable);
+
+        return $selectable;
+    }
+
+    /**
+     * Get permissions that are always restricted for non-master tenants.
+     */
+    public function getAlwaysRestrictedPermissions(): array
+    {
+        return config('permissions.always_restricted', []);
+    }
+
+    /**
+     * Merge user-selected restricted permissions with always_restricted permissions.
+     * For master tenant (ccs-yacht), no permissions are restricted.
+     */
+    private function mergeRestrictedPermissions(array $selectedRestrictions, string $slug): ?array
+    {
+        // Master tenant has no restrictions
+        if ($slug === 'ccs-yacht') {
+            return null;
+        }
+
+        $alwaysRestricted = config('permissions.always_restricted', []);
+
+        // Merge and deduplicate
+        return array_values(array_unique(array_merge($alwaysRestricted, $selectedRestrictions)));
     }
 }
