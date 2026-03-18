@@ -9,6 +9,7 @@ use App\Http\Resources\Project\DocumentResource;
 use App\Http\Resources\Project\DocumentTypeResource;
 use App\Http\Resources\ProjectResource;
 use App\Http\Resources\ShipyardResource;
+use App\Models\LogbookEntry;
 use App\Services\System\TenantProjectService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -61,6 +62,13 @@ class TenantProjectController extends Controller
 
         $project = $this->projectService->create($validated);
 
+        LogbookEntry::logSystemAdmin(
+            $project,
+            'project_created',
+            "Project '{$project->name}' created",
+            ['project_type' => $project->project_type]
+        );
+
         return $this->successWithResult(
             'CreateAction',
             "Project '{$project->name}' created successfully.",
@@ -98,6 +106,13 @@ class TenantProjectController extends Controller
 
         $project = $this->projectService->update($project, $validated);
 
+        LogbookEntry::logSystemAdmin(
+            $project,
+            'project_updated',
+            "Project settings updated",
+            ['fields' => array_keys($validated)]
+        );
+
         return $this->successWithResult(
             'UpdateAction',
             "Project '{$project->name}' updated successfully.",
@@ -134,6 +149,13 @@ class TenantProjectController extends Controller
         ]);
 
         $this->projectService->uploadGeneralArrangement($project, $request->file('file'));
+
+        LogbookEntry::logSystemAdmin(
+            $project,
+            'general_arrangement_uploaded',
+            'General Arrangement uploaded',
+            ['file_name' => $request->file('file')->getClientOriginalName()]
+        );
 
         return $this->successWithResult(
             'UpdateAction',
@@ -181,6 +203,12 @@ class TenantProjectController extends Controller
         try {
             $this->projectService->deleteGeneralArrangement($project);
 
+            LogbookEntry::logSystemAdmin(
+                $project,
+                'general_arrangement_deleted',
+                'General Arrangement deleted'
+            );
+
             return $this->successResponse('DeleteAction', 'General Arrangement deleted successfully.');
         } catch (InvalidArgumentException $e) {
             return $this->errorResponse($e->getMessage(), 422);
@@ -217,6 +245,13 @@ class TenantProjectController extends Controller
 
         $documentType = $this->projectService->createDocumentType($project, $validated);
 
+        LogbookEntry::logSystemAdmin(
+            $project,
+            'document_type_created',
+            "Document type '{$documentType->name}' created",
+            ['document_type_id' => $documentType->id]
+        );
+
         return $this->successWithResult(
             'CreateAction',
             "Document type '{$documentType->name}' created successfully.",
@@ -241,6 +276,13 @@ class TenantProjectController extends Controller
 
         $documentType = $this->projectService->updateDocumentType($documentType, $validated);
 
+        LogbookEntry::logSystemAdmin(
+            $project,
+            'document_type_updated',
+            "Document type '{$documentType->name}' updated",
+            ['document_type_id' => $documentType->id, 'fields' => array_keys($validated)]
+        );
+
         return $this->successWithResult(
             'UpdateAction',
             "Document type '{$documentType->name}' updated successfully.",
@@ -259,6 +301,12 @@ class TenantProjectController extends Controller
         try {
             $typeName = $documentType->name;
             $this->projectService->deleteDocumentType($documentType);
+
+            LogbookEntry::logSystemAdmin(
+                $project,
+                'document_type_deleted',
+                "Document type '{$typeName}' deleted"
+            );
 
             return $this->successResponse('DeleteAction', "Document type '{$typeName}' deleted successfully.");
         } catch (InvalidArgumentException $e) {
@@ -301,6 +349,13 @@ class TenantProjectController extends Controller
             $validated
         );
 
+        LogbookEntry::logSystemAdmin(
+            $project,
+            'document_uploaded',
+            "Uploaded document '{$document->title}' to {$documentType->name}",
+            ['document_id' => $document->id, 'document_type' => $documentType->name]
+        );
+
         return $this->successWithResult(
             'CreateAction',
             "Document '{$document->title}' uploaded successfully.",
@@ -337,7 +392,15 @@ class TenantProjectController extends Controller
         $document = $this->projectService->findDocument($project, $docId);
 
         $documentTitle = $document->title;
+        $documentType = $document->documentType->name;
         $this->projectService->deleteDocument($document);
+
+        LogbookEntry::logSystemAdmin(
+            $project,
+            'document_deleted',
+            "Deleted document '{$documentTitle}' from {$documentType}",
+            ['document_title' => $documentTitle, 'document_type' => $documentType]
+        );
 
         return $this->successResponse('DeleteAction', "Document '{$documentTitle}' deleted successfully.");
     }

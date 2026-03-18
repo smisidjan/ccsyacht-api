@@ -20,6 +20,7 @@ class LogbookEntry extends Model
     protected $fillable = [
         'project_id',
         'user_id',
+        'actor_name',
         'action_type',
         'description',
         'metadata',
@@ -55,15 +56,36 @@ class LogbookEntry extends Model
         string $actionType,
         string $description,
         ?User $user = null,
-        ?array $metadata = null
+        ?array $metadata = null,
+        ?string $actorName = null
     ): self {
         return self::create([
             'project_id' => $project->id,
             'user_id' => $user?->id,
+            'actor_name' => $actorName ?? $user?->name,
             'action_type' => $actionType,
             'description' => $description,
             'metadata' => $metadata,
         ]);
+    }
+
+    /**
+     * Log an action by a system admin (no user record in tenant database).
+     */
+    public static function logSystemAdmin(
+        Project $project,
+        string $actionType,
+        string $description,
+        ?array $metadata = null
+    ): self {
+        return self::log(
+            $project,
+            $actionType,
+            $description,
+            null,
+            $metadata,
+            config('app.system_admin_name')
+        );
     }
 
     // =========================================================================
@@ -86,6 +108,11 @@ class LogbookEntry extends Model
                 '@type' => 'Person',
                 'identifier' => $this->user->id,
                 'name' => $this->user->name,
+            ];
+        } elseif ($this->actor_name) {
+            $data['agent'] = [
+                '@type' => 'Organization',
+                'name' => $this->actor_name,
             ];
         }
 

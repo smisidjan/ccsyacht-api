@@ -21,15 +21,34 @@ class LogbookEntryResource extends BaseResource
             'actionStatus' => 'CompletedActionStatus',
             'name' => $this->action_type,
             'description' => $this->description,
-            'agent' => $this->when($this->relationLoaded('user') && $this->user, function () {
-                return [
-                    '@type' => 'Person',
-                    'identifier' => $this->user->id,
-                    'name' => $this->user->name,
-                ];
-            }),
+            'agent' => $this->getAgent(),
             'additionalProperty' => $this->when($this->metadata, $this->metadata),
             'startTime' => $this->formatDate($this->created_at),
         ];
+    }
+
+    /**
+     * Get the agent for this action (user or system admin).
+     */
+    private function getAgent(): ?array
+    {
+        // If there's a user relation loaded and present, use that
+        if ($this->relationLoaded('user') && $this->user) {
+            return [
+                '@type' => 'Person',
+                'identifier' => $this->user->id,
+                'name' => $this->user->name,
+            ];
+        }
+
+        // If there's an actor_name (system admin), use that
+        if ($this->actor_name) {
+            return [
+                '@type' => 'Organization',
+                'name' => $this->actor_name,
+            ];
+        }
+
+        return null;
     }
 }
