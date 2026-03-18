@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Tenant;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -156,8 +157,16 @@ class RoleSeeder extends Seeder
         foreach ($roles as $roleName => $config) {
             $role = Role::firstOrCreate(
                 ['name' => $roleName, 'guard_name' => 'web'],
+                ['uuid' => Str::uuid()->toString()]
             );
-            $role->update(['type' => $config['type']]);
+
+            // Update type and UUID if role already existed
+            $updates = ['type' => $config['type']];
+            if (empty($role->uuid)) {
+                $updates['uuid'] = Str::uuid()->toString();
+            }
+            $role->update($updates);
+
             $role->syncPermissions($config['permissions']);
         }
 
