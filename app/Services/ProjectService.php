@@ -103,7 +103,7 @@ class ProjectService
             $description,
             $user,
             null,
-            $user ? null : config('app.system_admin_name')
+            $user ? null : config('app.system_admin_actor_name')
         );
 
         return $project->fresh(['shipyard', 'creator']);
@@ -132,7 +132,7 @@ class ProjectService
             'Project completed',
             $user,
             null,
-            $user ? null : config('app.system_admin_name')
+            $user ? null : config('app.system_admin_actor_name')
         );
 
         return $project->fresh(['shipyard', 'creator']);
@@ -157,7 +157,7 @@ class ProjectService
             'Project archived',
             $user,
             null,
-            $user ? null : config('app.system_admin_name')
+            $user ? null : config('app.system_admin_actor_name')
         );
 
         return $project->fresh(['shipyard', 'creator']);

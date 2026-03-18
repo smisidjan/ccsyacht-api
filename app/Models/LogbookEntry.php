@@ -84,7 +84,7 @@ class LogbookEntry extends Model
             $description,
             null,
             $metadata,
-            config('app.system_admin_name')
+            config('app.system_admin_actor_name')
         );
     }
 

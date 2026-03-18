@@ -58,7 +58,7 @@ class TenantProjectService
     public function create(array $data): Project
     {
         $data['created_by'] = null;
-        $data['created_by_name'] = config('app.system_admin_name');
+        $data['created_by_name'] = config('app.system_admin_actor_name');
 
         $project = Project::create($data);
 
@@ -234,7 +234,7 @@ class TenantProjectService
             'file_size' => $file->getSize(),
             'mime_type' => $file->getMimeType(),
             'uploaded_by' => null,
-            'uploaded_by_name' => config('app.system_admin_name'),
+            'uploaded_by_name' => config('app.system_admin_actor_name'),
         ]);
 
         return $document->load(['uploader', 'documentType']);

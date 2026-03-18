@@ -125,14 +125,16 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | System Admin Display Name
+    | System Admin Configuration
     |--------------------------------------------------------------------------
     |
-    | This name is used when system admins create resources (projects, documents)
-    | on behalf of tenants. It appears as the author/creator in the API responses.
+    | system_admin_name: Used for seeding the initial system admin user account.
+    | system_admin_actor_name: Displayed in logbook entries when system admin
+    |                          performs actions on tenant projects.
     |
     */
 
-    'system_admin_name' => env('SYSTEM_ADMIN_NAME', 'Papertrail Marine'),
+    'system_admin_name' => env('SYSTEM_ADMIN_NAME', 'System Admin'),
+    'system_admin_actor_name' => env('SYSTEM_ADMIN_ACTOR_NAME', 'Papertrail Marine'),
 
 ];
