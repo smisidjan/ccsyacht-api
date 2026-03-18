@@ -122,6 +122,7 @@ services:
     entrypoint: []
     command: ["php", "artisan", "queue:work", "--tries=3", "--timeout=90"]
     environment:
+      - APP_NAME="${APP_NAME}"
       - DB_HOST=postgres
       - DB_DATABASE=${DB_DATABASE:-ccsyacht}
       - DB_USERNAME=${DB_USERNAME:-ccsyacht}
@@ -132,7 +133,7 @@ services:
       - MAIL_MAILER=${MAIL_MAILER:-mailtrap}
       - MAILTRAP_API_KEY=${MAILTRAP_API_KEY}
       - MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS}
-      - MAIL_FROM_NAME=${MAIL_FROM_NAME}
+      - MAIL_FROM_NAME="${APP_NAME}"
     volumes:
       - ./:/var/www
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
