@@ -112,6 +112,33 @@ services:
       redis:
         condition: service_healthy
 
+  queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ccsyacht-queue
+    restart: unless-stopped
+    working_dir: /var/www
+    entrypoint: []
+    command: ["php", "artisan", "queue:work", "--tries=3", "--timeout=90"]
+    environment:
+      - DB_HOST=postgres
+      - DB_DATABASE=${DB_DATABASE:-ccsyacht}
+      - DB_USERNAME=${DB_USERNAME:-ccsyacht}
+      - DB_PASSWORD=${DB_PASSWORD:-secret}
+      - REDIS_HOST=redis
+      - CACHE_STORE=redis
+      - QUEUE_CONNECTION=redis
+    volumes:
+      - ./:/var/www
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - ccsyacht-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
 networks:
   ccsyacht-network:
