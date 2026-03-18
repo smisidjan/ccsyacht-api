@@ -9,6 +9,7 @@ use Symfony\Component\Mailer\Transport\AbstractTransport;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\Mime\MessageConverter;
+use Illuminate\Support\Facades\Log;
 
 class MailtrapTransport extends AbstractTransport
 {
@@ -22,9 +23,17 @@ class MailtrapTransport extends AbstractTransport
 
     protected function doSend(SentMessage $message): void
     {
-        $email = MessageConverter::toEmail($message->getOriginalMessage());
+        try {
+            Log::info('MailtrapTransport: Starting to send email');
 
-        $mailtrapEmail = new MailtrapEmail();
+            $email = MessageConverter::toEmail($message->getOriginalMessage());
+            Log::info('MailtrapTransport: Email converted', [
+                'subject' => $email->getSubject(),
+                'to' => array_map(fn($a) => $a->getAddress(), $email->getTo()),
+                'from' => array_map(fn($a) => $a->getAddress(), $email->getFrom())
+            ]);
+
+            $mailtrapEmail = new MailtrapEmail();
 
         // Set from address
         $from = $email->getFrom();
@@ -67,8 +76,25 @@ class MailtrapTransport extends AbstractTransport
         }
 
         // Send via Mailtrap API
+        Log::info('MailtrapTransport: Sending via Mailtrap API', [
+            'api_key_length' => strlen($this->apiKey),
+            'api_key_prefix' => substr($this->apiKey, 0, 8) . '...'
+        ]);
+
         $client = MailtrapClient::initSendingEmails(apiKey: $this->apiKey);
-        $client->send($mailtrapEmail);
+        $response = $client->send($mailtrapEmail);
+
+        Log::info('MailtrapTransport: Email sent successfully', [
+            'response' => $response
+        ]);
+
+        } catch (\Exception $e) {
+            Log::error('MailtrapTransport: Failed to send email', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e;
+        }
     }
 
     public function __toString(): string
