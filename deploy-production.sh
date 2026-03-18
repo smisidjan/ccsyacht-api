@@ -24,26 +24,32 @@ docker compose exec -T app php artisan optimize:clear
 echo "🗄️ Running migrations..."
 docker compose exec -T app php artisan migrate --force
 
-# Recreate app container to reload environment
-echo "🔄 Recreating app container..."
-docker compose stop app
-docker compose rm -f app
-docker compose up -d app
+# Recreate app and queue containers to reload environment
+echo "🔄 Recreating app and queue containers..."
+docker compose stop app queue
+docker compose rm -f app queue
+docker compose up -d app queue
 
-# Wait for container to be ready
+# Wait for containers to be ready
 sleep 5
 
-# Optimize application (creates new caches with fresh environment)
-echo "⚡ Optimizing application..."
-docker compose exec -T app php artisan optimize
+# Clear config cache first to ensure fresh mail config
+echo "🧹 Clearing config cache for fresh mail settings..."
+docker compose exec -T app php artisan config:clear
 
-# Ensure CSRF/session configuration is correct
-echo "🔐 Ensuring session configuration..."
+# Optimize application (but don't cache config yet)
+echo "⚡ Optimizing application..."
+docker compose exec -T app php artisan route:cache
+docker compose exec -T app php artisan view:cache
+docker compose exec -T app php artisan event:cache
+
+# Cache config last with correct environment
+echo "🔐 Caching configuration with correct mail settings..."
 docker compose exec -T app php artisan config:cache
 
-# Final restart to ensure clean state
-echo "♻️ Final restart for clean state..."
-docker compose restart app
+# Restart queue to pick up new config
+echo "♻️ Restarting queue worker..."
+docker compose restart queue
 
 # Wait for container to be ready
 sleep 3
