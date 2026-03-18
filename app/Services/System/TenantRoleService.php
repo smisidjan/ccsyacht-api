@@ -90,19 +90,23 @@ class TenantRoleService
 
     /**
      * Get all available permissions for the current tenant.
-     * Filters out:
-     * - always_restricted permissions (from config)
-     * - tenant's restricted_permissions
+     * For master tenant (ccs-yacht): returns all permissions
+     * For other tenants: filters out always_restricted and tenant's restricted_permissions
      */
     public function getAllPermissions(?Tenant $tenant = null): Collection
     {
         $allPermissions = Permission::orderBy('name')->pluck('name')->toArray();
 
-        // Always filter out always_restricted permissions
+        $tenant = $tenant ?? tenant();
+
+        // Master tenant gets all permissions
+        if ($tenant && $tenant->slug === 'ccs-yacht') {
+            return collect($allPermissions);
+        }
+
+        // Filter out always_restricted permissions for non-master tenants
         $alwaysRestricted = config('permissions.always_restricted', []);
         $filtered = array_values(array_diff($allPermissions, $alwaysRestricted));
-
-        $tenant = $tenant ?? tenant();
 
         if (!$tenant) {
             return collect($filtered);
