@@ -131,6 +131,8 @@ services:
       - QUEUE_CONNECTION=redis
       - MAIL_MAILER=${MAIL_MAILER:-mailtrap}
       - MAILTRAP_API_KEY=${MAILTRAP_API_KEY}
+      - MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS}
+      - MAIL_FROM_NAME=${MAIL_FROM_NAME}
     volumes:
       - ./:/var/www
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
