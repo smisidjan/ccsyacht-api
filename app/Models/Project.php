@@ -30,6 +30,7 @@ class Project extends Model
         'end_date',
         'general_arrangement_path',
         'created_by',
+        'created_by_name',
     ];
 
     protected function casts(): array
@@ -227,6 +228,11 @@ class Project extends Model
                 '@type' => 'Person',
                 'identifier' => $this->creator->id,
                 'name' => $this->creator->name,
+            ];
+        } elseif ($this->created_by_name) {
+            $data['author'] = [
+                '@type' => 'Organization',
+                'name' => $this->created_by_name,
             ];
         }
 

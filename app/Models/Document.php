@@ -27,6 +27,7 @@ class Document extends Model
         'file_size',
         'mime_type',
         'uploaded_by',
+        'uploaded_by_name',
     ];
 
     protected function casts(): array
@@ -107,6 +108,11 @@ class Document extends Model
                 '@type' => 'Person',
                 'identifier' => $this->uploader->id,
                 'name' => $this->uploader->name,
+            ];
+        } elseif ($this->uploaded_by_name) {
+            $data['author'] = [
+                '@type' => 'Organization',
+                'name' => $this->uploaded_by_name,
             ];
         }
 

@@ -123,4 +123,16 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | System Admin Display Name
+    |--------------------------------------------------------------------------
+    |
+    | This name is used when system admins create resources (projects, documents)
+    | on behalf of tenants. It appears as the author/creator in the API responses.
+    |
+    */
+
+    'system_admin_name' => env('SYSTEM_ADMIN_NAME', 'Papertrail Marine'),
+
 ];

@@ -28,6 +28,11 @@ class DocumentResource extends BaseResource
 
         if ($this->relationLoaded('uploader') && $this->uploader) {
             $data['author'] = $this->formatPerson($this->uploader);
+        } elseif ($this->uploaded_by_name) {
+            $data['author'] = [
+                '@type' => 'Organization',
+                'name' => $this->uploaded_by_name,
+            ];
         }
 
         if ($this->relationLoaded('documentType') && $this->documentType) {

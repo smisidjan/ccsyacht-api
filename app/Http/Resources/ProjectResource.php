@@ -61,6 +61,11 @@ class ProjectResource extends BaseResource
 
         if ($this->relationLoaded('creator') && $this->creator) {
             $data['author'] = $this->formatPerson($this->creator);
+        } elseif ($this->created_by_name) {
+            $data['author'] = [
+                '@type' => 'Organization',
+                'name' => $this->created_by_name,
+            ];
         }
 
         return $data;
