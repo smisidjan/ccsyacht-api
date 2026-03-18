@@ -129,6 +129,8 @@ services:
       - REDIS_HOST=redis
       - CACHE_STORE=redis
       - QUEUE_CONNECTION=redis
+      - MAIL_MAILER=${MAIL_MAILER:-mailtrap}
+      - MAILTRAP_API_KEY=${MAILTRAP_API_KEY}
     volumes:
       - ./:/var/www
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
