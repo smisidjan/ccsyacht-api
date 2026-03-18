@@ -71,7 +71,6 @@ class ProjectController extends Controller
             'name' => ['sometimes', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
             'project_type' => ['sometimes', 'string', 'in:new_built,refit'],
-            'status' => ['sometimes', 'string', 'in:setup,active,locked,completed'],
             'shipyard_id' => ['nullable', 'uuid', 'exists:shipyards,id'],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
@@ -138,5 +137,78 @@ class ProjectController extends Controller
         return response()->download($path, $fileName, [
             'Content-Type' => $mimeType,
         ]);
+    }
+
+    // =========================================================================
+    // Status Transitions
+    // =========================================================================
+
+    /**
+     * Activate a project (setup/archived -> active).
+     * From setup: requires all required document types have documents, members, and signers.
+     * From archived: no requirements (reactivation).
+     */
+    public function activate(string $id, Request $request): JsonResponse
+    {
+        $project = Project::findOrFail($id);
+
+        $this->authorize('changeStatus', $project);
+
+        try {
+            $project = $this->projectService->activate($project, $request->user());
+
+            return $this->successWithResult(
+                'UpdateAction',
+                'Project activated successfully.',
+                new ProjectResource($project)
+            );
+        } catch (InvalidArgumentException $e) {
+            return $this->errorResponse($e->getMessage(), 422);
+        }
+    }
+
+    /**
+     * Complete a project (active -> completed).
+     * Requires: all required stages completed (not enforced yet).
+     */
+    public function complete(string $id, Request $request): JsonResponse
+    {
+        $project = Project::findOrFail($id);
+
+        $this->authorize('changeStatus', $project);
+
+        try {
+            $project = $this->projectService->complete($project, $request->user());
+
+            return $this->successWithResult(
+                'UpdateAction',
+                'Project completed successfully.',
+                new ProjectResource($project)
+            );
+        } catch (InvalidArgumentException $e) {
+            return $this->errorResponse($e->getMessage(), 422);
+        }
+    }
+
+    /**
+     * Archive a project (active -> archived).
+     */
+    public function archive(string $id, Request $request): JsonResponse
+    {
+        $project = Project::findOrFail($id);
+
+        $this->authorize('changeStatus', $project);
+
+        try {
+            $project = $this->projectService->archive($project, $request->user());
+
+            return $this->successWithResult(
+                'UpdateAction',
+                'Project archived successfully.',
+                new ProjectResource($project)
+            );
+        } catch (InvalidArgumentException $e) {
+            return $this->errorResponse($e->getMessage(), 422);
+        }
     }
 }

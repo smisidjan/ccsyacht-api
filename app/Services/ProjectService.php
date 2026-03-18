@@ -68,17 +68,139 @@ class ProjectService
         $project->delete();
     }
 
-    public function updateStatus(Project $project, string $status): Project
-    {
-        $allowedStatuses = ['setup', 'active', 'locked', 'completed'];
+    // =========================================================================
+    // Status Transitions
+    // =========================================================================
 
-        if (!in_array($status, $allowedStatuses)) {
-            throw new InvalidArgumentException("Invalid status: {$status}");
+    /**
+     * Activate a project (setup/archived -> active).
+     * From setup: requires document types with documents, members, signers.
+     * From archived: no requirements (reactivation).
+     */
+    public function activate(Project $project, ?User $user = null): Project
+    {
+        if (!in_array($project->status, ['setup', 'archived'])) {
+            throw new InvalidArgumentException(
+                "Project can only be activated from 'setup' or 'archived' status. Current status: {$project->status}"
+            );
         }
 
-        $project->update(['status' => $status]);
+        $isReactivation = $project->status === 'archived';
 
-        return $project->fresh();
+        // Only validate requirements when activating from setup
+        if (!$isReactivation) {
+            $this->validateActivationRequirements($project);
+        }
+
+        $project->update(['status' => 'active']);
+
+        $actionType = $isReactivation ? 'project_reactivated' : 'project_activated';
+        $description = $isReactivation ? 'Project reactivated' : 'Project activated';
+
+        LogbookEntry::log(
+            $project,
+            $actionType,
+            $description,
+            $user,
+            null,
+            $user ? null : config('app.system_admin_name')
+        );
+
+        return $project->fresh(['shipyard', 'creator']);
+    }
+
+    /**
+     * Complete a project (active -> completed).
+     * Future: requires all required stages to be completed.
+     */
+    public function complete(Project $project, ?User $user = null): Project
+    {
+        if ($project->status !== 'active') {
+            throw new InvalidArgumentException(
+                "Project can only be completed from 'active' status. Current status: {$project->status}"
+            );
+        }
+
+        // TODO: Check if all required stages are completed
+        // For now, always allow completion
+
+        $project->update(['status' => 'completed']);
+
+        LogbookEntry::log(
+            $project,
+            'project_completed',
+            'Project completed',
+            $user,
+            null,
+            $user ? null : config('app.system_admin_name')
+        );
+
+        return $project->fresh(['shipyard', 'creator']);
+    }
+
+    /**
+     * Archive a project (active -> archived).
+     */
+    public function archive(Project $project, ?User $user = null): Project
+    {
+        if ($project->status !== 'active') {
+            throw new InvalidArgumentException(
+                "Project can only be archived from 'active' status. Current status: {$project->status}"
+            );
+        }
+
+        $project->update(['status' => 'archived']);
+
+        LogbookEntry::log(
+            $project,
+            'project_archived',
+            'Project archived',
+            $user,
+            null,
+            $user ? null : config('app.system_admin_name')
+        );
+
+        return $project->fresh(['shipyard', 'creator']);
+    }
+
+    /**
+     * Validate requirements for activating a project.
+     */
+    private function validateActivationRequirements(Project $project): void
+    {
+        $errors = [];
+
+        // Check required document types have at least one document
+        $requiredTypes = $project->documentTypes()->where('is_required', true)->get();
+        foreach ($requiredTypes as $type) {
+            if ($type->documents()->count() === 0) {
+                $errors[] = "Required document type '{$type->name}' has no documents";
+            }
+        }
+
+        // Check project has at least one member
+        if ($project->members()->count() === 0) {
+            $errors[] = 'Project must have at least one member';
+        }
+
+        // Check project has at least one signer
+        if ($project->signers()->count() === 0) {
+            $errors[] = 'Project must have at least one signer';
+        }
+
+        if (!empty($errors)) {
+            throw new InvalidArgumentException(
+                'Cannot activate project: ' . implode('; ', $errors)
+            );
+        }
+    }
+
+    /**
+     * Check if a project is editable (not archived or completed).
+     */
+    public function isEditable(Project $project): bool
+    {
+        return !in_array($project->status, ['archived', 'completed']);
     }
 
     private function checkProjectLimit(): void

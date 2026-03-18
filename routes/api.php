@@ -111,6 +111,11 @@ Route::prefix('system')->group(function () {
             Route::put('/projects/{uuid}', [TenantProjectController::class, 'update']);
             Route::delete('/projects/{uuid}', [TenantProjectController::class, 'destroy']);
 
+            // Project Status Transitions
+            Route::post('/projects/{uuid}/activate', [TenantProjectController::class, 'activate']);
+            Route::post('/projects/{uuid}/complete', [TenantProjectController::class, 'complete']);
+            Route::post('/projects/{uuid}/archive', [TenantProjectController::class, 'archive']);
+
             // General Arrangement
             Route::post('/projects/{uuid}/general-arrangement', [TenantProjectController::class, 'uploadGeneralArrangement']);
             Route::get('/projects/{uuid}/general-arrangement', [TenantProjectController::class, 'downloadGeneralArrangement']);

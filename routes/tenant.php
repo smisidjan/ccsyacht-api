@@ -165,6 +165,11 @@ Route::prefix('api')->middleware('tenant')->group(function () {
         Route::middleware('permission:edit_projects')->group(function () {
             Route::put('/projects/{id}', [ProjectController::class, 'update']);
             Route::post('/projects/{id}/general-arrangement', [ProjectController::class, 'uploadGeneralArrangement']);
+
+            // Status transitions
+            Route::post('/projects/{id}/activate', [ProjectController::class, 'activate']);
+            Route::post('/projects/{id}/complete', [ProjectController::class, 'complete']);
+            Route::post('/projects/{id}/archive', [ProjectController::class, 'archive']);
         });
 
         Route::middleware('permission:delete_projects')->group(function () {

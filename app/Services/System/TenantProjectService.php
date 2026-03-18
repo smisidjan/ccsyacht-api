@@ -6,6 +6,7 @@ namespace App\Services\System;
 
 use App\Models\Document;
 use App\Models\DocumentType;
+use App\Models\LogbookEntry;
 use App\Models\Project;
 use App\Models\Shipyard;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -300,5 +301,68 @@ class TenantProjectService
         }
 
         $shipyard->delete();
+    }
+
+    // =========================================================================
+    // Status Transitions
+    // =========================================================================
+
+    /**
+     * Activate a project (setup/archived -> active).
+     * System admin can always activate without validation requirements.
+     */
+    public function activate(Project $project): Project
+    {
+        if (!in_array($project->status, ['setup', 'archived'])) {
+            throw new InvalidArgumentException(
+                "Project can only be activated from 'setup' or 'archived' status. Current status: {$project->status}"
+            );
+        }
+
+        $isReactivation = $project->status === 'archived';
+        $project->update(['status' => 'active']);
+
+        $actionType = $isReactivation ? 'project_reactivated' : 'project_activated';
+        $description = $isReactivation ? 'Project reactivated' : 'Project activated';
+
+        LogbookEntry::logSystemAdmin($project, $actionType, $description);
+
+        return $project->fresh(['shipyard', 'creator']);
+    }
+
+    /**
+     * Complete a project (active -> completed).
+     */
+    public function complete(Project $project): Project
+    {
+        if ($project->status !== 'active') {
+            throw new InvalidArgumentException(
+                "Project can only be completed from 'active' status. Current status: {$project->status}"
+            );
+        }
+
+        $project->update(['status' => 'completed']);
+
+        LogbookEntry::logSystemAdmin($project, 'project_completed', 'Project completed');
+
+        return $project->fresh(['shipyard', 'creator']);
+    }
+
+    /**
+     * Archive a project (active -> archived).
+     */
+    public function archive(Project $project): Project
+    {
+        if ($project->status !== 'active') {
+            throw new InvalidArgumentException(
+                "Project can only be archived from 'active' status. Current status: {$project->status}"
+            );
+        }
+
+        $project->update(['status' => 'archived']);
+
+        LogbookEntry::logSystemAdmin($project, 'project_archived', 'Project archived');
+
+        return $project->fresh(['shipyard', 'creator']);
     }
 }

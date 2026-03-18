@@ -98,7 +98,6 @@ class TenantProjectController extends Controller
             'name' => ['sometimes', 'string', 'max:255', 'unique:projects,name,' . $project->id],
             'description' => ['nullable', 'string', 'max:5000'],
             'project_type' => ['sometimes', 'string', 'in:new_built,refit'],
-            'status' => ['sometimes', 'string', 'in:setup,active,locked,completed'],
             'shipyard_id' => ['nullable', 'uuid', 'exists:shipyards,id'],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
@@ -131,6 +130,71 @@ class TenantProjectController extends Controller
         $this->projectService->delete($project);
 
         return $this->successResponse('DeleteAction', "Project '{$projectName}' deleted successfully.");
+    }
+
+    // =========================================================================
+    // Status Transitions
+    // =========================================================================
+
+    /**
+     * Activate a project (setup/archived -> active).
+     * System admin can always activate without validation requirements.
+     */
+    public function activate(string $uuid): JsonResponse
+    {
+        $project = $this->projectService->find($uuid);
+
+        try {
+            $project = $this->projectService->activate($project);
+
+            return $this->successWithResult(
+                'UpdateAction',
+                'Project activated successfully.',
+                new ProjectResource($project)
+            );
+        } catch (InvalidArgumentException $e) {
+            return $this->errorResponse($e->getMessage(), 422);
+        }
+    }
+
+    /**
+     * Complete a project (active -> completed).
+     */
+    public function complete(string $uuid): JsonResponse
+    {
+        $project = $this->projectService->find($uuid);
+
+        try {
+            $project = $this->projectService->complete($project);
+
+            return $this->successWithResult(
+                'UpdateAction',
+                'Project completed successfully.',
+                new ProjectResource($project)
+            );
+        } catch (InvalidArgumentException $e) {
+            return $this->errorResponse($e->getMessage(), 422);
+        }
+    }
+
+    /**
+     * Archive a project (active -> archived).
+     */
+    public function archive(string $uuid): JsonResponse
+    {
+        $project = $this->projectService->find($uuid);
+
+        try {
+            $project = $this->projectService->archive($project);
+
+            return $this->successWithResult(
+                'UpdateAction',
+                'Project archived successfully.',
+                new ProjectResource($project)
+            );
+        } catch (InvalidArgumentException $e) {
+            return $this->errorResponse($e->getMessage(), 422);
+        }
     }
 
     // =========================================================================

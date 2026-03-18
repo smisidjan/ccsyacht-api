@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('name');
             $table->text('description')->nullable();
             $table->enum('project_type', ['new_built', 'refit']);
-            $table->enum('status', ['setup', 'active', 'locked', 'completed'])->default('setup');
+            $table->enum('status', ['setup', 'active', 'completed', 'archived'])->default('setup');
             $table->date('start_date')->nullable();
             $table->date('end_date')->nullable();
             $table->string('general_arrangement_path')->nullable();
