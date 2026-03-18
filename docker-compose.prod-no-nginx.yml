@@ -1,0 +1,124 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ccsyacht-app
+    restart: unless-stopped
+    working_dir: /var/www
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./:/var/www
+      - ./storage:/var/www/storage
+      - ./bootstrap/cache:/var/www/bootstrap/cache
+    networks:
+      - ccsyacht
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - CONTAINER_ROLE=app
+
+  queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ccsyacht-queue
+    restart: unless-stopped
+    working_dir: /var/www
+    command: php artisan queue:work --tries=3 --timeout=90
+    volumes:
+      - ./:/var/www
+      - ./storage:/var/www/storage
+    networks:
+      - ccsyacht
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - CONTAINER_ROLE=queue
+
+  reverb:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ccsyacht-reverb
+    restart: unless-stopped
+    working_dir: /var/www
+    command: php artisan reverb:start --host=0.0.0.0 --port=8080
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./:/var/www
+    networks:
+      - ccsyacht
+    depends_on:
+      - app
+      - redis
+    environment:
+      - CONTAINER_ROLE=reverb
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ccsyacht-scheduler
+    restart: unless-stopped
+    working_dir: /var/www
+    command: /bin/sh -c "while true; do php artisan schedule:run >> /dev/null 2>&1; sleep 60; done"
+    volumes:
+      - ./:/var/www
+      - ./storage:/var/www/storage
+    networks:
+      - ccsyacht
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - CONTAINER_ROLE=scheduler
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: ccsyacht-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+    networks:
+      - ccsyacht
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: ccsyacht-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - ccsyacht
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  ccsyacht:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
