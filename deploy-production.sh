@@ -3,9 +3,17 @@ set -e
 
 echo "🚀 Starting deployment..."
 
+# Backup .env before pull
+echo "💾 Backing up .env..."
+cp .env .env.backup
+
 # Pull latest code
 echo "📥 Pulling latest code..."
 git pull origin main
+
+# Restore .env to keep production settings
+echo "♻️ Restoring production .env..."
+cp .env.backup .env
 
 # Clear ALL caches first (including bootstrap cache)
 echo "🧹 Clearing all caches..."
