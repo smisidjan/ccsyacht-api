@@ -112,16 +112,6 @@ services:
       redis:
         condition: service_healthy
 
-  # Mailpit for local email testing
-  mailpit:
-    image: axllent/mailpit
-    container_name: ccsyacht-mailpit
-    restart: unless-stopped
-    ports:
-      - "${MAILPIT_UI_PORT:-8025}:8025"
-      - "${MAILPIT_SMTP_PORT:-1025}:1025"
-    networks:
-      - ccsyacht-network
 
 networks:
   ccsyacht-network:
