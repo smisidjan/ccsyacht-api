@@ -8,6 +8,12 @@ services:
     restart: unless-stopped
     working_dir: /var/www
     environment:
+      - APP_NAME="${APP_NAME}"
+      - APP_ENV=${APP_ENV}
+      - APP_KEY=${APP_KEY}
+      - APP_DEBUG=${APP_DEBUG}
+      - APP_URL=${APP_URL}
+      - FRONTEND_URL=${FRONTEND_URL}
       - DB_HOST=postgres
       - DB_DATABASE=${DB_DATABASE:-ccsyacht}
       - DB_USERNAME=${DB_USERNAME:-ccsyacht}
@@ -17,6 +23,11 @@ services:
       - QUEUE_CONNECTION=redis
       - SESSION_DRIVER=redis
       - SESSION_DOMAIN=${SESSION_DOMAIN}
+      - SANCTUM_STATEFUL_DOMAINS=${SANCTUM_STATEFUL_DOMAINS}
+      - MAIL_MAILER=${MAIL_MAILER}
+      - MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS}
+      - MAIL_FROM_NAME="${MAIL_FROM_NAME}"
+      - MAILTRAP_API_KEY=${MAILTRAP_API_KEY}
     volumes:
       - ./:/var/www
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
@@ -124,6 +135,11 @@ services:
     command: ["php", "artisan", "queue:work", "--tries=3", "--timeout=90"]
     environment:
       - APP_NAME="${APP_NAME}"
+      - APP_ENV=${APP_ENV}
+      - APP_KEY=${APP_KEY}
+      - APP_DEBUG=${APP_DEBUG}
+      - APP_URL=${APP_URL}
+      - FRONTEND_URL=${FRONTEND_URL}
       - DB_HOST=postgres
       - DB_DATABASE=${DB_DATABASE:-ccsyacht}
       - DB_USERNAME=${DB_USERNAME:-ccsyacht}
@@ -132,10 +148,11 @@ services:
       - CACHE_STORE=redis
       - QUEUE_CONNECTION=redis
       - SESSION_DOMAIN=${SESSION_DOMAIN}
+      - SANCTUM_STATEFUL_DOMAINS=${SANCTUM_STATEFUL_DOMAINS}
       - MAIL_MAILER=${MAIL_MAILER:-mailtrap}
       - MAILTRAP_API_KEY=${MAILTRAP_API_KEY}
       - MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS}
-      - MAIL_FROM_NAME="${APP_NAME}"
+      - MAIL_FROM_NAME="${MAIL_FROM_NAME}"
     volumes:
       - ./:/var/www
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini

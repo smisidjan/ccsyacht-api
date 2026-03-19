@@ -55,7 +55,11 @@ docker compose exec -T app php artisan event:cache
 echo "♻️ Restarting queue worker..."
 docker compose restart queue
 
-# Wait for container to be ready
+# Restart nginx to fix DNS resolution after container recreation
+echo "🔄 Restarting nginx to update container DNS..."
+docker compose restart backend
+
+# Wait for containers to be ready
 sleep 3
 
 echo "✅ Deployment complete!"
