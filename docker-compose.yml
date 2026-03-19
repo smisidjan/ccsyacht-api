@@ -16,6 +16,7 @@ services:
       - CACHE_STORE=redis
       - QUEUE_CONNECTION=redis
       - SESSION_DRIVER=redis
+      - SESSION_DOMAIN=${SESSION_DOMAIN}
     volumes:
       - ./:/var/www
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
@@ -130,6 +131,7 @@ services:
       - REDIS_HOST=redis
       - CACHE_STORE=redis
       - QUEUE_CONNECTION=redis
+      - SESSION_DOMAIN=${SESSION_DOMAIN}
       - MAIL_MAILER=${MAIL_MAILER:-mailtrap}
       - MAILTRAP_API_KEY=${MAILTRAP_API_KEY}
       - MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS}
