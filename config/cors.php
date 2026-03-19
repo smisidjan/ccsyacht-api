@@ -20,7 +20,6 @@ return [
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
-        env('FRONTEND_URL', 'http://localhost:3000'),
         'https://papertrail.ccsyacht.com',
         'https://api.papertrail.ccsyacht.com',
         'http://localhost:3000',
