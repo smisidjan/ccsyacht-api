@@ -15,10 +15,13 @@ git pull origin main
 echo "♻️ Restoring production .env..."
 cp .env.backup .env
 
-# Clear ALL caches first (including bootstrap cache)
-echo "🧹 Clearing all caches..."
-rm -f bootstrap/cache/*.php
-docker compose exec -T app php artisan optimize:clear
+# Clear specific caches (but keep session data)
+echo "🧹 Clearing application caches..."
+docker compose exec -T app php artisan cache:clear
+docker compose exec -T app php artisan route:clear
+docker compose exec -T app php artisan view:clear
+docker compose exec -T app php artisan event:clear
+# Note: We do NOT clear config:clear here to preserve session settings
 
 # Run migrations
 echo "🗄️ Running migrations..."
@@ -33,19 +36,20 @@ docker compose up -d app queue
 # Wait for containers to be ready
 sleep 5
 
-# Clear config cache first to ensure fresh mail config
-echo "🧹 Clearing config cache for fresh mail settings..."
-docker compose exec -T app php artisan config:clear
+# Ensure critical environment variables are set for session/CSRF
+echo "🔐 Ensuring session and CSRF configuration..."
+docker compose exec -T app sh -c 'php artisan tinker --execute="
+echo \"SESSION_DRIVER: \" . env(\"SESSION_DRIVER\", \"redis\");
+echo \"\nSESSION_DOMAIN: \" . env(\"SESSION_DOMAIN\", \".ccsyacht.com\");
+echo \"\nSANCTUM_STATEFUL_DOMAINS: \" . env(\"SANCTUM_STATEFUL_DOMAINS\");
+"'
 
-# Optimize application (but don't cache config yet)
+# Optimize application with all caches
 echo "⚡ Optimizing application..."
+docker compose exec -T app php artisan config:cache
 docker compose exec -T app php artisan route:cache
 docker compose exec -T app php artisan view:cache
 docker compose exec -T app php artisan event:cache
-
-# Cache config last with correct environment
-echo "🔐 Caching configuration with correct mail settings..."
-docker compose exec -T app php artisan config:cache
 
 # Restart queue to pick up new config
 echo "♻️ Restarting queue worker..."
