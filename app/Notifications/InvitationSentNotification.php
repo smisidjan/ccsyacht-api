@@ -9,7 +9,9 @@ class InvitationSentNotification extends BaseNotification
 {
     public function __construct(
         private Invitation $invitation
-    ) {}
+    ) {
+        parent::__construct();
+    }
 
     public function toMail(object $notifiable): MailMessage
     {

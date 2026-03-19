@@ -9,7 +9,9 @@ class PasswordResetNotification extends BaseNotification
     public function __construct(
         private string $token,
         private string $resetPath = '/reset-password'
-    ) {}
+    ) {
+        parent::__construct();
+    }
 
     public function toMail(object $notifiable): MailMessage
     {

@@ -11,7 +11,9 @@ class TenantAdminRegistrationNotification extends BaseNotification
     public function __construct(
         private TenantRegistrationToken $token,
         private Tenant $tenant
-    ) {}
+    ) {
+        parent::__construct();
+    }
 
     public function toMail(object $notifiable): MailMessage
     {

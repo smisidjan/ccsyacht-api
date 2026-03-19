@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Jobs\TenantAware;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -9,7 +10,26 @@ use Illuminate\Notifications\Notification;
 
 abstract class BaseNotification extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use Queueable, TenantAware;
+
+    /**
+     * Prepare the notification for queueing.
+     */
+    public function __construct()
+    {
+        // Set tenant ID when creating the notification
+        if (tenancy()->initialized) {
+            $this->tenantId = tenant()->id;
+        }
+    }
+
+    /**
+     * Get the middleware the job should pass through.
+     */
+    public function middleware(): array
+    {
+        return [new \App\Jobs\Middleware\InitializeTenancy()];
+    }
 
     /**
      * Get the notification's delivery channels.
