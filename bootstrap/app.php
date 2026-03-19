@@ -32,7 +32,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'master-tenant' => EnsureMasterTenant::class,
         ]);
 
-        $middleware->statefulApi();
+        // Disable CSRF for API routes - we use Bearer token authentication
+        // $middleware->statefulApi();
 
         $middleware->redirectGuestsTo(function (Request $request) {
             if ($request->is('api/*') || $request->expectsJson()) {
